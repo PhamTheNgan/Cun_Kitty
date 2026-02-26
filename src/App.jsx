@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import './App.css'
+import kittyImg from '/kitty.png'
 
 function App() {
     const [position, setPosition] = useState({ x: 50, y: 50 })
@@ -38,7 +39,7 @@ function App() {
 
     useEffect(() => {
         const img = new Image()
-        img.src = '/kitty.png'
+        img.src = kittyImg
         img.onload = () => setIsLoaded(true)
     }, [])
 
@@ -196,7 +197,7 @@ function App() {
                             width: `${kittySize}px`, height: `${kittySize}px`,
                             transform: `translate(-50%, -50%)`
                         }}>
-                            <img src="/kitty.png" alt="Kitty" />
+                            <img src={kittyImg} alt="Kitty" />
                         </div>
                     </>
                 )}
