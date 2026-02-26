@@ -3,6 +3,72 @@ import './App.css'
 import kittyImg from '/kitty.png'
 
 function App() {
+    // App screen: 'login' | 'menu' | 'game'
+    const [screen, setScreen] = useState('login')
+    const [showProfile, setShowProfile] = useState(false)
+    const [totalPoints, setTotalPoints] = useState(() => parseInt(localStorage.getItem('kitty_points') || '0'))
+    const [checkinToast, setCheckinToast] = useState('')
+    const [showCheckinPopup, setShowCheckinPopup] = useState(false)
+    const [checkinOptions, setCheckinOptions] = useState([])
+    const [avatar, setAvatar] = useState(() => localStorage.getItem('kitty_avatar') || '')
+    const avatarInputRef = useRef(null)
+
+    const generateNganVariations = () => {
+        const withDiacritics = ['n', 'g', 'â', 'n']
+        const withoutDiacritics = ['n', 'g', 'a', 'n']
+        const makeVariation = () => {
+            const useDiacritics = Math.random() > 0.5
+            const letters = useDiacritics ? [...withDiacritics] : [...withoutDiacritics]
+            return letters.map(c => Math.random() > 0.5 ? c.toUpperCase() : c).join('')
+        }
+        const set = new Set()
+        while (set.size < 3) set.add(makeVariation())
+        return [...set]
+    }
+
+    // Login
+    const [birthDay, setBirthDay] = useState('')
+    const [birthMonth, setBirthMonth] = useState('')
+    const [birthYear, setBirthYear] = useState('')
+    const [loginError, setLoginError] = useState('')
+    const [loginShake, setLoginShake] = useState(false)
+
+    const addPoints = (amount) => {
+        setTotalPoints(prev => {
+            const updated = Math.max(0, prev + amount)
+            localStorage.setItem('kitty_points', String(updated))
+            return updated
+        })
+    }
+
+    const handleCheckinAnswer = () => {
+        localStorage.setItem('kitty_last_checkin', new Date().toDateString())
+        addPoints(100)
+        setShowCheckinPopup(false)
+        setCheckinToast('✨ Điểm danh thành công: +100 điểm!')
+        setTimeout(() => setCheckinToast(''), 3000)
+    }
+
+    const handleLogin = () => {
+        if (birthDay === '24' && birthMonth === '9' && birthYear === '2001') {
+            setLoginError('')
+            setCheckinOptions(generateNganVariations())
+            setShowCheckinPopup(true)
+            setScreen('menu')
+        } else {
+            setLoginError('nhầm mấc tiêu goy')
+            setLoginShake(true)
+            setTimeout(() => setLoginShake(false), 500)
+        }
+    }
+
+    const handleLogout = () => {
+        setBirthDay(''); setBirthMonth(''); setBirthYear('')
+        setShowProfile(false)
+        setScreen('login')
+    }
+
+    // Game states
     const [position, setPosition] = useState({ x: 50, y: 50 })
     const [food, setFood] = useState({ x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 })
     const [bombs, setBombs] = useState(() =>
@@ -19,22 +85,20 @@ function App() {
     const [isLoaded, setIsLoaded] = useState(false)
     const [isMoving, setIsMoving] = useState(false)
 
-    // Game Constants
     const WIN_SCORE = 25
     const LOSS_SCORE = -10
     const MAX_BOMBS = 25
     const BASE_SIZE = 40
     const GROWTH_RATE = 15
-    const MAX_SPEED = 0.35 // Restricted top speed for smoothness
-    const FRICTION = 0.92 // Damping factor for smooth stop
-    const ACCELERATION = 0.04 // How fast it picks up speed
+    const MAX_SPEED = 0.35
+    const FRICTION = 0.92
+    const ACCELERATION = 0.04
 
     const kittySize = Math.max(20, Math.min(BASE_SIZE + score * GROWTH_RATE, Math.min(window.innerWidth, window.innerHeight) / 2))
 
-    // Refs for physics to ensure high performance and zero lag
     const posRef = useRef({ x: 50, y: 50 })
     const velRef = useRef({ x: 0, y: 0 })
-    const targetRef = useRef(null) // Only set when clicking
+    const targetRef = useRef(null)
     const keysPressed = useRef(new Set())
 
     useEffect(() => {
@@ -47,23 +111,17 @@ function App() {
         const count = type === 'win' ? 30 : 15
         const colors = type === 'eat' ? ['#ffea00', '#ff00ff', '#00ffff'] : ['#ff4d6d', '#ff758d', '#333']
         const newParticles = Array.from({ length: count }).map(() => ({
-            id: Math.random(),
-            x, y,
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4,
+            id: Math.random(), x, y,
+            vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
             size: Math.random() * 8 + 4,
             color: colors[Math.floor(Math.random() * colors.length)],
-            rotation: Math.random() * 360,
-            type
+            rotation: Math.random() * 360, type
         }))
         setParticles(prev => [...prev, ...newParticles])
         setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id))), 800)
     }, [])
 
-    const triggerShake = () => {
-        setScreenShake(true)
-        setTimeout(() => setScreenShake(false), 300)
-    }
+    const triggerShake = () => { setScreenShake(true); setTimeout(() => setScreenShake(false), 300) }
 
     const checkCollision = useCallback((pos, objPos) => {
         const dx = (pos.x - objPos.x) * (window.innerWidth / 100)
@@ -80,98 +138,191 @@ function App() {
         setGameState('playing')
     }
 
-    // High-performance movement loop
+    const goBackToMenu = () => {
+        restartGame()
+        setScreen('menu')
+    }
+
     useEffect(() => {
-        if (!isLoaded || gameState !== 'playing') return
-
+        if (!isLoaded || gameState !== 'playing' || screen !== 'game') return
         const gameLoop = () => {
-            let ax = 0
-            let ay = 0
-
-            // 1. Mouse Attraction (Smooth pull towards target)
+            let ax = 0, ay = 0
             if (targetRef.current) {
                 const dx = targetRef.current.x - posRef.current.x
                 const dy = targetRef.current.y - posRef.current.y
                 const dist = Math.sqrt(dx * dx + dy * dy)
-
-                if (dist < 1) {
-                    targetRef.current = null // Arrived
-                } else {
-                    ax += (dx / dist) * ACCELERATION
-                    ay += (dy / dist) * ACCELERATION
-                }
+                if (dist < 1) targetRef.current = null
+                else { ax += (dx / dist) * ACCELERATION; ay += (dy / dist) * ACCELERATION }
             }
-
-            // 2. Keyboard Input (Direct acceleration)
             if (keysPressed.current.has('arrowup') || keysPressed.current.has('w')) ay -= ACCELERATION
             if (keysPressed.current.has('arrowdown') || keysPressed.current.has('s')) ay += ACCELERATION
             if (keysPressed.current.has('arrowleft') || keysPressed.current.has('a')) ax -= ACCELERATION
             if (keysPressed.current.has('arrowright') || keysPressed.current.has('d')) ax += ACCELERATION
-
-            // 3. Physics update
             velRef.current.x = (velRef.current.x + ax) * FRICTION
             velRef.current.y = (velRef.current.y + ay) * FRICTION
-
-            // Speed Cap for mượt mà
             const currentSpeed = Math.sqrt(velRef.current.x ** 2 + velRef.current.y ** 2)
             if (currentSpeed > MAX_SPEED) {
                 velRef.current.x = (velRef.current.x / currentSpeed) * MAX_SPEED
                 velRef.current.y = (velRef.current.y / currentSpeed) * MAX_SPEED
             }
-
-            // Update Position
             posRef.current.x = Math.max(0, Math.min(100, posRef.current.x + velRef.current.x))
             posRef.current.y = Math.max(0, Math.min(100, posRef.current.y + velRef.current.y))
-
-            // Sync with React State for rendering
             setPosition({ ...posRef.current })
             setIsMoving(currentSpeed > 0.05)
-
-            // 4. Collisions
             if (checkCollision(posRef.current, food)) {
                 createParticles(food.x, food.y, 'eat')
-                setScore(s => {
-                    if (s + 1 >= WIN_SCORE) setGameState('won')
-                    return s + 1
-                })
+                setScore(s => { if (s + 1 >= WIN_SCORE) setGameState('won'); return s + 1 })
                 setFood({ x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 })
             }
-
             bombs.forEach(bomb => {
                 if (checkCollision(posRef.current, bomb)) {
-                    createParticles(bomb.x, bomb.y, 'bomb')
-                    triggerShake()
-                    setScore(s => {
-                        if (s - 1 <= LOSS_SCORE) setGameState('lost')
-                        return s - 1
-                    })
+                    createParticles(bomb.x, bomb.y, 'bomb'); triggerShake()
+                    setScore(s => { if (s - 1 <= LOSS_SCORE) setGameState('lost'); return s - 1 })
                     setBombs(prev => {
                         const updated = prev.map(b => b.id === bomb.id ? { ...b, x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 } : b)
                         if (prev.length >= MAX_BOMBS) return updated
-
-                        const bombsToAdd = Math.min(2, MAX_BOMBS - prev.length)
-                        const newBombs = Array.from({ length: bombsToAdd }).map(() => ({
-                            id: Math.random(),
-                            x: Math.random() * 80 + 10,
-                            y: Math.random() * 80 + 10
-                        }))
-                        return [...updated, ...newBombs]
+                        const toAdd = Math.min(2, MAX_BOMBS - prev.length)
+                        return [...updated, ...Array.from({ length: toAdd }).map(() => ({ id: Math.random(), x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 }))]
                     })
                 }
             })
         }
-
         const interval = setInterval(gameLoop, 16)
         return () => clearInterval(interval)
-    }, [isLoaded, gameState, food, bombs, checkCollision, createParticles])
+    }, [isLoaded, gameState, screen, food, bombs, checkCollision, createParticles])
 
     useEffect(() => {
         const down = (e) => keysPressed.current.add(e.key.toLowerCase())
         const up = (e) => keysPressed.current.delete(e.key.toLowerCase())
         window.addEventListener('keydown', down); window.addEventListener('keyup', up)
-        return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); }
+        return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
     }, [])
 
+    const handleAvatarUpload = (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+            const dataUrl = ev.target.result
+            localStorage.setItem('kitty_avatar', dataUrl)
+            setAvatar(dataUrl)
+        }
+        reader.readAsDataURL(file)
+    }
+
+    // ========== USER INFO BAR (shown on menu & game) ==========
+    const userInfoBar = (
+        <div className="user-bar">
+            <div className="user-avatar" onClick={() => setShowProfile(!showProfile)}>
+                {avatar ? <img src={avatar} alt="avatar" /> : '🐱'}
+            </div>
+            <span className="user-name" onClick={() => setShowProfile(!showProfile)}>Player 🎀</span>
+            <input type="file" accept="image/*" ref={avatarInputRef} style={{ display: 'none' }} onChange={handleAvatarUpload} />
+            {showProfile && (
+                <div className="profile-dropdown">
+                    <div className="profile-header">
+                        <div className="profile-avatar-large">
+                            {avatar ? <img src={avatar} alt="avatar" /> : '🐱'}
+                            <button className="avatar-edit-btn" onClick={() => avatarInputRef.current?.click()}>✏️</button>
+                        </div>
+                        <span>Cún Kitty</span>
+                    </div>
+                    <div className="profile-info">
+                        <p><strong>Ngày sinh:</strong> 24/09/2001</p>
+                        <p><strong>Level:</strong> Người chơi bí ẩn 🌸</p>
+                        <p><strong>🏆 Tổng điểm:</strong> <span style={{ color: '#ff4d6d', fontSize: '1.1rem' }}>{totalPoints}</span></p>
+                    </div>
+                    <button className="logout-btn" onClick={handleLogout}>Đăng xuất 👋</button>
+                </div>
+            )}
+        </div>
+    )
+
+    // ========== LOGIN SCREEN ==========
+    if (screen === 'login') {
+        return (
+            <div className="login-screen">
+                <div className={`login-box ${loginShake ? 'shake' : ''}`}>
+                    <div className="login-icon">🎀</div>
+                    <h2>hãy chọn ngày tháng năm sinh của bạn để vào chơi ẩn nhé =)))</h2>
+                    <div className="date-selects">
+                        <div className="select-group">
+                            <label>Ngày</label>
+                            <select value={birthDay} onChange={(e) => { setBirthDay(e.target.value); setLoginError('') }} className="date-select">
+                                <option value="">--</option>
+                                {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={String(i + 1)}>{i + 1}</option>)}
+                            </select>
+                        </div>
+                        <div className="select-group">
+                            <label>Tháng</label>
+                            <select value={birthMonth} onChange={(e) => { setBirthMonth(e.target.value); setLoginError('') }} className="date-select">
+                                <option value="">--</option>
+                                {['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'].map((m, i) => <option key={i + 1} value={String(i + 1)}>{m}</option>)}
+                            </select>
+                        </div>
+                        <div className="select-group">
+                            <label>Năm</label>
+                            <select value={birthYear} onChange={(e) => { setBirthYear(e.target.value); setLoginError('') }} className="date-select">
+                                <option value="">--</option>
+                                {Array.from({ length: 40 }, (_, i) => <option key={2010 - i} value={String(2010 - i)}>{2010 - i}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <button onClick={handleLogin} className="login-btn">Vào chơi 🎮</button>
+                    {loginError && <p className="login-error">{loginError}</p>}
+                </div>
+            </div>
+        )
+    }
+
+    // ========== MENU SCREEN ==========
+    if (screen === 'menu') {
+        return (
+            <div className="menu-screen">
+                {userInfoBar}
+                {checkinToast && <div className="checkin-toast">{checkinToast}</div>}
+                <div className="menu-content">
+                    <h1 className="menu-title">🎀 Kitty Game Zone 🎀</h1>
+                    <p className="menu-subtitle">🏆 Tổng điểm: {totalPoints} | Chọn game để chơi nào!</p>
+                    <div className="game-list">
+                        <div className="game-card" onClick={() => { restartGame(); setScreen('game'); }}>
+                            <div className="game-card-icon">🐱</div>
+                            <div className="game-card-info">
+                                <h3>Kitty Ăn Táo</h3>
+                                <p>Điều khiển Kitty ăn táo, né bom, to lên thật lớn!</p>
+                                <span className="game-card-badge">🎮 Chơi ngay</span>
+                            </div>
+                        </div>
+                        <div className="game-card coming-soon">
+                            <div className="game-card-icon">🌸</div>
+                            <div className="game-card-info">
+                                <h3>Coming Soon...</h3>
+                                <p>Game mới đang được phát triển!</p>
+                                <span className="game-card-badge">🔒 Sắp ra mắt</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {showCheckinPopup && (
+                    <div className="checkin-overlay">
+                        <div className="checkin-popup">
+                            <div className="checkin-popup-icon">💕</div>
+                            <h2>Điểm danh hàng ngày</h2>
+                            <p className="checkin-question">Tên người iu của cậu là gì?</p>
+                            <div className="checkin-answers">
+                                {checkinOptions.map((opt, i) => (
+                                    <button key={i} onClick={handleCheckinAnswer}>{opt}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // ========== GAME SCREEN ==========
     return (
         <div className={`app-container ${isLoaded ? 'loaded' : ''} ${screenShake ? 'shake' : ''}`}
             onClick={(e) => {
@@ -179,6 +330,9 @@ function App() {
                 targetRef.current = { x: (e.clientX / window.innerWidth) * 100, y: (e.clientY / window.innerHeight) * 100 }
             }}>
             {!isLoaded && <div className="loading-screen">🎀 Magic Loading...</div>}
+
+            {userInfoBar}
+            <button className="back-to-menu-btn" onClick={goBackToMenu}>← Menu</button>
 
             <div className="game-world">
                 {isLoaded && (
@@ -204,16 +358,18 @@ function App() {
             </div>
 
             <div className="score-board">
+                <span>Score: {score}</span>
                 <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: `${Math.max(0, (score - LOSS_SCORE) / (WIN_SCORE - LOSS_SCORE) * 100)}%` }}></div></div>
-                <div>Score: {score} | Bombs: {bombs.length}</div>
+                <span>💣 {bombs.length}</span>
             </div>
 
             {gameState !== 'playing' && (
                 <div className="game-overlay">
                     <div className="overlay-content">
                         <h2>{gameState === 'won' ? '🎉 YOU WIN! 🎉' : '💀 GAME OVER 💀'}</h2>
-                        <p>{gameState === 'won' ? 'Kitty is now a GIANT!' : 'Too many bombs...'}</p>
-                        <button onClick={restartGame}>Play Again 🎀</button>
+                        <p>{gameState === 'won' ? 'Kitty is now a GIANT! +100 điểm 🏆' : 'Too many bombs... -50 điểm 😢'}</p>
+                        <button onClick={() => { if (gameState === 'won') addPoints(100); else addPoints(-50); restartGame(); }}>Play Again 🎀</button>
+                        <button onClick={() => { if (gameState === 'won') addPoints(100); else addPoints(-50); goBackToMenu(); }} style={{ marginLeft: '10px', background: '#888' }}>Menu 🏠</button>
                     </div>
                 </div>
             )}
