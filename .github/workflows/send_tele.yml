@@ -1,0 +1,32 @@
+name: Send Telegram Message
+on:
+  schedule:
+    # Chạy vào 08:00 sáng giờ Việt Nam (01:00 UTC)
+    - cron: '0 1 * * *'
+  workflow_dispatch: # Cho phép bạn bấm nút chạy thử thủ công
+
+jobs:
+  send_message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gửi tin nhắn ngẫu nhiên qua Telegram API
+        run: |
+          MESSAGES=(
+            "Cún ơi, chúc buổi sáng ngọt lịm như em yêu anh. Nhớ điểm danh Kitty Ẩn nha, không được lơ là đâu. Yêu Cún nhiều lắm!"
+            "Sáng rồi Cún, anh/em gửi nụ hôn dịu dàng qua màn hình. Ghé Kitty Ẩn điểm danh tí thôi, để anh/em biết Cún vẫn ở đây nhé. Mãi thương Cún."
+            "Ôi Cún ơi, ánh nắng hôm nay cũng ghen tị với nụ cười Cún. Nhớ điểm danh Kitty Ẩn để mình cùng thắng nhé. Yêu Cún hơn cả trà sữa!"
+            "Cún ngốc, dậy thôi để mặt trời còn phải ganh tị với Cún. Điểm danh Kitty Ẩn xong mình cà phê nhe? Gửi Cún cả vũ trụ yêu thương."
+            "Buổi sáng tốt lành, Cún bé của anh/em, anh/em nhớ Cún đến mệt. Đừng quên điểm danh Kitty Ẩn nha, để anh/em yên tâm. Ôm Cún thật chặt!"
+            "Cún ơi, tim anh/em đã thức từ lúc nhớ Cún rồi. Điểm danh Kitty Ẩn lẹ lẹ cho anh/em thấy mặt mũi Cún. Yêu Cún đến phát hờn!"
+            "Ngủ ngon không Cún? Hy vọng Cún thức dậy với nụ cười vì có anh/em. Điểm danh Kitty Ẩn xong mình hí hửng cùng nhau nhé. Thương Cún vô bờ."
+            "Sáng vàng rực vì có Cún trong tim anh/em. Nhớ điểm danh Kitty Ẩn, đừng để anh/em phải trông chờ. Cún là cả thế giới của anh/em."
+            "Cún yêu, dậy thôi để anh/em được mãn nhãn với nắng và nụ cười của Cún. Điểm danh Kitty Ẩn tí xíu rồi mình bắt đầu ngày mới. Yêu em/anh nhiều lắm!"
+            "Chào buổi sáng, Cún ngọt ngào, anh/em muốn ôm Cún ngay bây giờ. Đừng quên điểm danh Kitty Ẩn để mình cùng quẩy. Cún mãi là người thương nhất."
+          )
+
+          RANDOM_INDEX=$((RANDOM % ${#MESSAGES[@]}))
+          MESSAGE="${MESSAGES[$RANDOM_INDEX]}"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}"
