@@ -15,7 +15,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  /* background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg'); */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
