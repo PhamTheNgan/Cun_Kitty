@@ -1,4 +1,4 @@
-.app-container {
+.app-container, .login-screen, .menu-screen {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -8,21 +8,7 @@
   overflow: hidden;
 }
 
-.app-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: blur(2px);
-  z-index: -1;
-  transition: opacity 1s ease-in-out;
-}
+
 
 .loading-screen {
   position: fixed;
@@ -252,22 +238,6 @@
 }
 
 /* ===== LOGIN SCREEN ===== */
-.login-screen {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #fce4ec, #f8bbd0, #f48fb1);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 .login-box {
   background: rgba(255, 255, 255, 0.85);
@@ -526,16 +496,6 @@
 }
 
 /* ===== MENU SCREEN ===== */
-.menu-screen {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #fce4ec, #f8bbd0, #f48fb1);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
-}
 
 .menu-content {
   text-align: center;

@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import './App.css'
 import kittyImg from '/kitty.png'
+import KittyMiner from './KittyMiner'
 
 function App() {
-    // App screen: 'login' | 'menu' | 'game'
-    const [screen, setScreen] = useState('login')
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+    // App screen: 'login' | 'menu' | 'game' | 'miner'
+    const [screen, setScreen] = useState(isLocal ? 'menu' : 'login')
     const [showProfile, setShowProfile] = useState(false)
     const [totalPoints, setTotalPoints] = useState(() => parseInt(localStorage.getItem('kitty_points') || '0'))
     const [checkinToast, setCheckinToast] = useState('')
@@ -232,7 +235,7 @@ function App() {
                         <p><strong>Level:</strong> Người chơi bí ẩn 🌸</p>
                         <p><strong>🏆 Tổng điểm:</strong> <span style={{ color: '#ff4d6d', fontSize: '1.1rem' }}>{totalPoints}</span></p>
                     </div>
-                    <button className="logout-btn" onClick={handleLogout}>Đăng xuất 👋</button>
+                    {!isLocal && <button className="logout-btn" onClick={handleLogout}>Đăng xuất 👋</button>}
                 </div>
             )}
         </div>
@@ -293,12 +296,12 @@ function App() {
                                 <span className="game-card-badge">🎮 Chơi ngay</span>
                             </div>
                         </div>
-                        <div className="game-card coming-soon">
-                            <div className="game-card-icon">🌸</div>
+                        <div className="game-card" onClick={() => setScreen('miner')}>
+                            <div className="game-card-icon">⛏️</div>
                             <div className="game-card-info">
-                                <h3>Coming Soon...</h3>
-                                <p>Game mới đang được phát triển!</p>
-                                <span className="game-card-badge">🔒 Sắp ra mắt</span>
+                                <h3>Đào Kitty</h3>
+                                <p>Thả móc câu đào các Kitty dưới biển nhớ!</p>
+                                <span className="game-card-badge">⛏️ Chơi ngay</span>
                             </div>
                         </div>
                     </div>
@@ -319,6 +322,17 @@ function App() {
                     </div>
                 )}
             </div>
+        )
+    }
+
+    // ========== MINER SCREEN ==========
+    if (screen === 'miner') {
+        return (
+            <KittyMiner
+                onBack={() => setScreen('menu')}
+                onFinish={(pts) => { addPoints(pts); setScreen('menu'); }}
+                avatar={avatar}
+            />
         )
     }
 

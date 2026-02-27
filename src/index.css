@@ -20,6 +20,25 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* Romantic pink transparent overlay mixed with the background image */
+  background-image: linear-gradient(rgba(255, 228, 242, 0.45), rgba(255, 179, 204, 0.5)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(5px);
+  transform: scale(1.05); /* hide blurry edges */
+  z-index: -100;
+  pointer-events: none;
 }
 
 #root {
