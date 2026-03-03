@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import './App.css'
 import kittyImg from '/kitty.png'
 import KittyMiner from './KittyMiner'
+import Game3D from './Game3D'
 
 function App() {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -304,6 +305,14 @@ function App() {
                                 <span className="game-card-badge">⛏️ Chơi ngay</span>
                             </div>
                         </div>
+                        <div className="game-card" onClick={() => setScreen('game3')}>
+                            <div className="game-card-icon">🐍</div>
+                            <div className="game-card-info">
+                                <h3>Rắn Không Gian 3D</h3>
+                                <p>Khám phá không gian vô định và ánh sáng neon!</p>
+                                <span className="game-card-badge">🌟 Quẩy lunn</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -332,6 +341,16 @@ function App() {
                 onBack={() => setScreen('menu')}
                 onFinish={(pts) => { addPoints(pts); setScreen('menu'); }}
                 avatar={avatar}
+            />
+        )
+    }
+
+    // ========== GAME3 SCREEN ==========
+    if (screen === 'game3') {
+        return (
+            <Game3D
+                onBack={() => setScreen('menu')}
+                onFinish={(pts) => { addPoints(pts); setScreen('menu'); }}
             />
         )
     }
