@@ -31,7 +31,7 @@ body::before {
   width: 100vw;
   height: 100vh;
   /* Romantic pink transparent overlay mixed with the background image */
-  /* background-image: linear-gradient(rgba(255, 228, 242, 0.45), rgba(255, 179, 204, 0.5)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg'); */
+  background-image: linear-gradient(rgba(255, 228, 242, 0.45), rgba(255, 179, 204, 0.5)), url('/2c9857e4-e2ae-4828-9749-a87f8ddb330a.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
