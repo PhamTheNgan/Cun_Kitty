@@ -3,6 +3,7 @@ import './App.css'
 import kittyImg from '/kitty.png'
 import KittyMiner from './KittyMiner'
 import Game3D from './Game3D'
+import ArmyShooter from './ArmyShooter'
 
 function App() {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -313,6 +314,14 @@ function App() {
                                 <span className="game-card-badge">🌟 Quẩy lunn</span>
                             </div>
                         </div>
+                        <div className="game-card" onClick={() => setScreen('army')}>
+                            <div className="game-card-icon">🚀</div>
+                            <div className="game-card-info">
+                                <h3>Đại Pháo Bắn Mèo</h3>
+                                <p>Căn lực bắn, tính gió và càn quét kẻ thù đi nào!</p>
+                                <span className="game-card-badge">💥 Ngắm Bắn</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -351,6 +360,17 @@ function App() {
             <Game3D
                 onBack={() => setScreen('menu')}
                 onFinish={(pts) => { addPoints(pts); setScreen('menu'); }}
+            />
+        )
+    }
+
+    // ========== ARMY SHOOTER SCREEN ==========
+    if (screen === 'army') {
+        return (
+            <ArmyShooter
+                onBack={() => setScreen('menu')}
+                onFinish={(pts) => { addPoints(pts); setScreen('menu'); }}
+                avatar={avatar}
             />
         )
     }
