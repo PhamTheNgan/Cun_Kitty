@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import kittyImg from '/kitty.png'
 
 const WORLD_W = 1200
@@ -122,6 +122,9 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
     const [floatingTexts, setFloatingTexts] = useState([])
     const [isShaking, setIsShaking] = useState(false)
     const [showGuide, setShowGuide] = useState(false)
+    const [ultraUsed, setUltraUsed] = useState(false)
+    const ultraUsedRef = useRef(false)
+    const ultraVariantRef = useRef(0) // 0=multi-shot, 1=vortex, 2=thunder
 
     // Helpers
     const spawnText = (text, cx, cy, color) => {
@@ -446,7 +449,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
             if (keys.has('Space')) {
                 if (turnRef.current === 'player') {
                     p.isCharging = true
-                    p.power += 1.5
+                    p.power += 0.7
                     if (p.power > 100) p.power = 100
                     playerNeedsUpdate = true
                 }
@@ -460,46 +463,58 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                     if (activeModRef.current === 'x3') count = 3
                     if (activeModRef.current === 'x5') count = 5
 
-                    // Deduct ammo/item uses
-                    if (['helicopter', 'saw', 'rain', 'poison', 'teleport'].includes(ammoRef.current)) {
-                        const amt = ammoRef.current
-                        setItems(prev => ({ ...prev, [amt]: Math.max(0, prev[amt] - 1) }))
-                    }
-
-                    if (activeModRef.current) {
-                        const amod = activeModRef.current
-                        setItems(prev => ({ ...prev, [amod]: Math.max(0, prev[amod] - 1) }))
-                        setActiveMod(null)
-                        activeModRef.current = null
-                    }
-
-                    for (let i = 0; i < count; i++) {
-                        projectilesRef.current.push({
-                            id: Math.random(),
-                            x: p.x + Math.cos(rad) * (TANK_W / 2),
-                            y: getTerrainY(p.x) - TANK_H - Math.sin(rad) * (TANK_W / 2),
-                            vx: Math.cos(rad) * speed * p.dir,
-                            vy: -Math.sin(rad) * speed,
-                            type: ammoRef.current,
-                            isEnemy: false,
-                            delay: i * 15 // Các viên bắn nối đuôi cách nhau 15 frame
-                        })
-                    }
-
-                    if (['helicopter', 'saw', 'rain', 'poison', 'teleport'].includes(ammoRef.current)) {
+                    const isUltraShot = ammoRef.current === 'ultra'
+                    if (isUltraShot) {
+                        // ULTRA: random 1 trong 3 hiệu ứng
+                        const variant = Math.floor(Math.random() * 3)
+                        ultraVariantRef.current = variant
                         setAmmoType('normal')
                         ammoRef.current = 'normal'
+
+                        if (variant === 0) {
+                            for (let i = 0; i < 3; i++) {
+                                const spreadAngle = (i - 1) * 8
+                                const aRad2 = (p.angle + spreadAngle) * (Math.PI / 180)
+                                projectilesRef.current.push({ id: Math.random(), x: p.x + Math.cos(rad) * (TANK_W / 2), y: getTerrainY(p.x) - TANK_H - Math.sin(rad) * (TANK_W / 2), vx: Math.cos(aRad2) * speed * p.dir * 1.2, vy: -Math.sin(aRad2) * speed * 1.2, type: 'ultra', isEnemy: false, delay: i * 8 })
+                            }
+                            spawnText('🔥 TRIPLE SHOT!! 🔥', p.x, p.y - 60, '#ff8c00')
+                        } else if (variant === 1) {
+                            projectilesRef.current.push({ id: Math.random(), x: p.x + Math.cos(rad) * (TANK_W / 2), y: getTerrainY(p.x) - TANK_H - Math.sin(rad) * (TANK_W / 2), vx: Math.cos(rad) * speed * p.dir * 1.5, vy: -Math.sin(rad) * speed * 1.5, type: 'ultra_vortex', isEnemy: false, delay: 0 })
+                            spawnText('🌀 VORTEX BLAST!! 🌀', p.x, p.y - 60, '#cc00ff')
+                        } else {
+                            projectilesRef.current.push({ id: Math.random(), x: p.x + Math.cos(rad) * (TANK_W / 2), y: getTerrainY(p.x) - TANK_H, vx: Math.cos(rad) * speed * p.dir, vy: -Math.sin(rad) * speed, type: 'ultra_thunder', isEnemy: false, delay: 0 })
+                            spawnText('⚡ THUNDER STORM!! ⚡', p.x, p.y - 60, '#ffea00')
+                        }
+                        setIsShaking(true)
+                        setTimeout(() => setIsShaking(false), 300)
+                    } else {
+                        // NORMAL / ITEM shots
+                        if (['helicopter', 'saw', 'rain', 'poison', 'teleport'].includes(ammoRef.current)) {
+                            const amt = ammoRef.current
+                            setItems(prev => ({ ...prev, [amt]: Math.max(0, prev[amt] - 1) }))
+                        }
+                        if (activeModRef.current) {
+                            const amod = activeModRef.current
+                            setItems(prev => ({ ...prev, [amod]: Math.max(0, prev[amod] - 1) }))
+                            setActiveMod(null)
+                            activeModRef.current = null
+                        }
+                        for (let i = 0; i < count; i++) {
+                            projectilesRef.current.push({ id: Math.random(), x: p.x + Math.cos(rad) * (TANK_W / 2), y: getTerrainY(p.x) - TANK_H - Math.sin(rad) * (TANK_W / 2), vx: Math.cos(rad) * speed * p.dir, vy: -Math.sin(rad) * speed, type: ammoRef.current, isEnemy: false, delay: i * 15 })
+                        }
+                        if (['helicopter', 'saw', 'rain', 'poison', 'teleport'].includes(ammoRef.current)) {
+                            setAmmoType('normal')
+                            ammoRef.current = 'normal'
+                        }
                     }
 
                     p.power = 0
                     p.isCharging = false
                     playerNeedsUpdate = true
-
-                    // PASS LƯỢT ĐI ĐỂ CHỜ ĐẠN RƠI
                     turnRef.current = 'shooting'
                     setTurn('shooting')
                 }
-            }
+            } // end else (Space not held)
 
             if (playerNeedsUpdate) {
                 setPlayerState({ ...p })
@@ -523,13 +538,16 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 const isFlare = proj.type === 'helicopter'
                 const isNuke = proj.type === 'nuke'
                 const isRainDrop = proj.type === 'rain_drop'
+                const isUltra = proj.type === 'ultra'
+                const isVortex = proj.type === 'ultra_vortex'
+                const isThunder = proj.type === 'ultra_thunder'
 
                 // Trọng lực và Gió
                 if (!isSaw && !isNuke && !isRainDrop) {
                     proj.vy += (isHeavy ? GRAVITY * 1.5 : GRAVITY)
-                    proj.vx += windRef.current * (isHeavy ? 0.3 : 1) // Gió tạt đạn nhẹ dữ dội hơn
+                    proj.vx += windRef.current * (isHeavy ? 0.3 : 1)
                 } else if (isNuke || isRainDrop) {
-                    proj.vy += (isRainDrop ? GRAVITY * 0.8 : GRAVITY * 1.5) // Nuke và Mưa bay thẳng tuột
+                    proj.vy += (isRainDrop ? GRAVITY * 0.8 : GRAVITY * 1.5)
                 }
 
                 proj.x += proj.vx
@@ -542,8 +560,8 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                     continue // Biến mất
                 }
 
-                let dmgRadius = isHeavy ? 60 : (isNuke ? 150 : (isSaw ? 0 : (isRainDrop ? 20 : 35)))
-                let dmgAmount = isHeavy ? 60 : (isNuke ? 9999 : (isSaw ? 0 : (isRainDrop ? 15 : 25)))
+                let dmgRadius = isHeavy ? 60 : (isNuke ? 150 : (isSaw ? 0 : (isRainDrop ? 20 : ((isUltra || isVortex || isThunder) ? 70 : 35))))
+                let dmgAmount = isHeavy ? 60 : (isNuke ? 9999 : (isSaw ? 0 : (isRainDrop ? 15 : ((isUltra || isVortex || isThunder) ? 100 : 25))))
 
                 // Xử lý đạn Răng Cưa (Khoan liên tục không điểm dừng)
                 if (isSaw) {
@@ -603,7 +621,17 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                                 hit = true
                                 let realDmg = (isNuke ? 9999 : dmgAmount)
                                 e.hp -= realDmg
-                                spawnText(`-${realDmg}`, e.x, e.y - 30, isNuke ? '#ff003c' : (proj.type === 'poison' ? '#00ffaa' : '#ffea00'))
+                                spawnText(`-${realDmg}`, e.x, e.y - 30, isNuke ? '#ff003c' : (isUltra ? '#ff8c00' : (proj.type === 'poison' ? '#00ffaa' : '#ffea00')))
+                                if (isUltra) {
+                                    spawnText('🔥 ĐẠU KỲ ULTRA!! 🔥', e.x, e.y - 60, '#ff4500')
+                                    for (let k = 0; k < 4; k++) {
+                                        setTimeout(() => {
+                                            setExplosions(ex => [...ex, { id: Math.random(), x: e.x + (Math.random() - 0.5) * 60, y: e.y + (Math.random() - 0.5) * 60, radius: 50 + Math.random() * 40, color: ['#ff4500', '#ff8c00', '#ffea00', '#ff007f'][k] }])
+                                        }, k * 80)
+                                    }
+                                    setIsShaking(true)
+                                    setTimeout(() => setIsShaking(false), 600)
+                                }
 
                                 if (proj.type === 'poison') {
                                     e.poisonTurns = 3
@@ -688,6 +716,65 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                             p.y = proj.y - TANK_H - 10
                             playerNeedsUpdate = true
                             spawnText('✨ DỊCH CHUYỂN!', p.x, p.y - 40, '#cc00ff')
+                        } else if (isVortex) {
+                            // Ultra-Vortex: hiệu ứng xương tím, nổ tâm rộng, địch trong vòng 150px nhận 125 dmg
+                            for (let k = 0; k < 8; k++) {
+                                const angle = (k / 8) * Math.PI * 2
+                                const ox = Math.cos(angle) * 60
+                                const oy = Math.sin(angle) * 60
+                                setTimeout(() => {
+                                    explodeTerrain(proj.x + ox * 0.5, proj.y + oy * 0.5, 40)
+                                    setExplosions(ex => [...ex, { id: Math.random(), x: proj.x + ox, y: proj.y + oy, radius: 40, color: k % 2 === 0 ? '#cc00ff' : '#ff007f' }])
+                                    setTimeout(() => setExplosions(ex => ex.slice(1)), 700)
+                                }, k * 50)
+                            }
+                            explodeTerrain(proj.x, proj.y, 80)
+                            setExplosions(ex => [...ex, { id: Math.random(), x: proj.x, y: proj.y, radius: 100, color: '#cc00ff' }])
+                            // Địch trong vòng 150px nhận võ ngoài
+                            enemiesRef.current.forEach(e => {
+                                if (e.hp > 0 && Math.hypot(proj.x - e.x, proj.y - e.y) < 150) {
+                                    e.hp -= 125
+                                    spawnText('-125 🌀VORTEX', e.x, e.y - 40, '#cc00ff')
+                                }
+                            })
+                            setIsShaking(true)
+                            setTimeout(() => setIsShaking(false), 1000)
+                            spawnText('🌀 VORTEX BLAST!! 🌀', proj.x, proj.y - 60, '#cc00ff')
+                        } else if (isThunder) {
+                            // Ultra-Thunder: sét đánh xuống tất cả địch đang sống
+                            enemiesRef.current.forEach((e, idx) => {
+                                if (e.hp <= 0) return
+                                const delay = idx * 250
+                                setTimeout(() => {
+                                    e.hp -= 90
+                                    spawnText('-90 ⚡SÉT', e.x, e.y - 40, '#ffea00')
+                                    for (let k = 0; k < 3; k++) {
+                                        setTimeout(() => {
+                                            setExplosions(ex => [...ex, { id: Math.random(), x: e.x + (Math.random() - 0.5) * 30, y: e.y - Math.random() * 60, radius: 30, color: '#ffea00' }])
+                                            setTimeout(() => setExplosions(ex => ex.slice(1)), 400)
+                                        }, k * 80)
+                                    }
+                                    explodeTerrain(e.x, e.y, 30)
+                                    setEnemies([...enemiesRef.current])
+                                }, delay)
+                            })
+                            setIsShaking(true)
+                            setTimeout(() => setIsShaking(false), 1200)
+                            spawnText('⚡ THUNDER STORM!! ⚡', proj.x, proj.y - 60, '#ffea00')
+                        } else if (isUltra) {
+                            // Ultra-A: Triple Shot Explosion — Siêu nổ hàng loạt
+                            for (let k = 0; k < 6; k++) {
+                                const ox = (Math.random() - 0.5) * 100
+                                const oy = (Math.random() - 0.5) * 80
+                                setTimeout(() => {
+                                    explodeTerrain(proj.x + ox, proj.y + oy, 50)
+                                    setExplosions(ex => [...ex, { id: Math.random(), x: proj.x + ox, y: proj.y + oy, radius: 60 + Math.random() * 40, color: ['#ff4500', '#ff8c00', '#ffea00', '#ff007f', '#cc00ff', '#00f3ff'][k] }])
+                                    setTimeout(() => setExplosions(ex => ex.slice(1)), 600)
+                                }, k * 60)
+                            }
+                            setIsShaking(true)
+                            setTimeout(() => setIsShaking(false), 800)
+                            spawnText('🔥 ULTRA BLAST!! 🔥', proj.x, proj.y - 50, '#ff8c00')
                         } else {
                             // PHÁT NỔ TẠI ĐÂY!
                             explodeTerrain(proj.x, proj.y, dmgRadius)
@@ -728,10 +815,10 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
             }
 
             // --- WAIT TIMER LOGIC XỬ LÝ LƯỢT ---
+            // Chờ đạn và hiệu ứng bay xong mới tiếp tục (120 frames ~2s cho thunder/rain)
             if (projectilesRef.current.length === 0) {
                 waitTimerRef.current += 1
-                // Đợi tàn dư bụi khói 1 tí (~1.5s = 90 frames)
-                if (waitTimerRef.current > 70) {
+                if (waitTimerRef.current > 120) {
                     if (turnRef.current === 'shooting') {
                         // Player vừa bắn xong đạn rớt thì tới lượt AI Enemy!
                         turnRef.current = 'enemy'
@@ -821,6 +908,46 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
 
         return () => clearInterval(loop)
     }, [gameState])
+
+    // --- DẮ CÓ HOOKS này TRưỚC mọi early return (Rules of Hooks) ---
+    const trajectoryDots = useMemo(() => {
+        if (turn !== 'player' || gameState !== 'playing') return []
+        try {
+            const p = playerState
+            const rad = p.angle * (Math.PI / 180)
+            // Dùng power thật (nếu đang nạp lực), không thì preview ở 60%
+            const previewPower = p.power > 0 ? p.power : 60
+            const speed = (previewPower / 100) * 18
+            const isHeavyAmmo = ammoType === 'heavy'
+            const isSaw = ammoType === 'saw'
+            // Dùng đúng gravity và gió như engine thật
+            const GRAV = isSaw ? 0 : (isHeavyAmmo ? GRAVITY * 1.5 : GRAVITY)
+            const windPerFrame = isSaw ? 0 : (windRef.current * (isHeavyAmmo ? 0.3 : 1.0))
+            let vx = Math.cos(rad) * speed * p.dir
+            let vy = -Math.sin(rad) * speed
+            let px = p.x
+            let py = (getTerrainY(p.x, TANK_W) - TANK_H) - 2
+            const dots = []
+            for (let i = 0; i < 200; i++) {
+                vx += windPerFrame
+                vy += GRAV
+                px += vx
+                py += vy
+                if (px < 0 || px > WORLD_W || py > WORLD_H + 50) break
+                const tx = Math.max(0, Math.min(WORLD_W - 1, Math.floor(px)))
+                if (terrainRef.current[tx] && py >= terrainRef.current[tx]) break
+                if (i % 2 === 0) {
+                    dots.push({ x: px, y: py, alpha: Math.max(0.08, 1 - i / 200) })
+                }
+            }
+            return dots
+        } catch (e) {
+            return []
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playerState.angle, playerState.dir, playerState.power, wind, ammoType, turn, gameState])
+
+    const TRAJ_COLOR = ammoType === 'heavy' ? '#ffaa00' : (ammoType === 'saw' ? '#cc44ff' : (ammoType === 'poison' ? '#00ffaa' : '#00f3ff'))
 
     // --- RENDERERS ---
     if (gameState === 'menu') {
@@ -1069,6 +1196,49 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 </div>
             </div>
 
+            {/* NÚT ULTRA - chỉ hiện khi HP < 50% và chưa dùng */}
+            {playerState.hp > 0 && playerState.hp < 50 && !ultraUsed && turn === 'player' && (
+                <div style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 150 }}>
+                    <button
+                        onClick={() => {
+                            if (!itemUsedThisTurn) {
+                                setUltraUsed(true)
+                                ultraUsedRef.current = true
+                                setAmmoType('ultra')
+                                ammoRef.current = 'ultra'
+                                setItemUsedThisTurn(true)
+                                spawnText('🔥 ULTRA CHẾN BẨU! 🔥', playerRef.current.x, playerRef.current.y - 60, '#ff4500')
+                            }
+                        }}
+                        style={{
+                            padding: '14px 40px', background: 'linear-gradient(135deg, #ff4500, #ff007f, #cc00ff)',
+                            border: '3px solid #ff8c00', borderRadius: '40px', color: 'white',
+                            fontWeight: 'bold', fontSize: '1.2rem', cursor: itemUsedThisTurn ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 0 30px #ff4500, 0 0 60px rgba(255,69,0,0.5)',
+                            animation: 'ultra-pulse 1s ease-in-out infinite alternate',
+                            opacity: itemUsedThisTurn ? 0.4 : 1,
+                            letterSpacing: '2px', textShadow: '0 0 10px #fff'
+                        }}
+                        title="Kỹ Năng Đặc Biệt! Bắn 3 viên phân tán x4 sát thương! Dùng 1 lần duy nhất!"
+                    >
+                        🔥 ULTRA SKILL 🔥 {ammoType === 'ultra' ? '(Sẵn Sàng!)' : ''}
+                    </button>
+                </div>
+            )}
+
+            {/* GỢI Ý khi HP < 50% và chưa dùng ultra */}
+            {playerState.hp > 0 && playerState.hp < 50 && !ultraUsed && turn === 'player' && (
+                <div style={{
+                    position: 'absolute', top: '70px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'rgba(255,69,0,0.9)', padding: '8px 20px', borderRadius: '20px',
+                    color: 'white', fontWeight: 'bold', fontSize: '0.95rem', zIndex: 110,
+                    animation: 'ultra-pulse 0.8s ease-in-out infinite alternate',
+                    boxShadow: '0 0 15px rgba(255,69,0,0.7)', whiteSpace: 'nowrap'
+                }}>
+                    🔥 Cún đang bị thương! Hãy dùng kỹ năng đặc biệt ULTRA nào~
+                </div>
+            )}
+
             {/* BẢN ĐỒ GAME BOX SCALED (Tối ưu responsive, 1200x650 cứng) */}
             <div style={{
                 width: `${WORLD_W}px`, height: `${WORLD_H}px`,
@@ -1090,10 +1260,22 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                         {level === 7 && <div className="weather-sun" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />}
 
                         {/* Trang trí Biển / Vực Nước */}
-                        {(level === 8 || level === 5) && <div style={{ position: 'absolute', bottom: -50, width: WORLD_W, height: WORLD_H - 450, background: 'rgba(0, 150, 255, 0.5)', zIndex: 6, boxShadow: '0 -20px 40px rgba(0,200,255,0.4)', pointerEvents: 'none', animation: 'ocean 4s infinite alternate' }} />}
+                        {(level === 8 || level === 5) && <div style={{ position: 'absolute', bottom: 0, width: WORLD_W, height: '100px', background: 'rgba(0, 150, 255, 0.35)', zIndex: 2, boxShadow: '0 -10px 30px rgba(0,200,255,0.3)', pointerEvents: 'none' }} />}
 
                         <svg width={WORLD_W} height={WORLD_H} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
                             <polygon points={terrainPolygons} fill={currTheme.fill} stroke={currTheme.stroke} strokeWidth="6" strokeLinejoin="round" />
+                            {/* TRAJECTORY PREVIEW */}
+                            {trajectoryDots.map((dot, i) => (
+                                <circle
+                                    key={i}
+                                    cx={dot.x}
+                                    cy={dot.y}
+                                    r={i === 0 ? 4 : (dot.alpha > 0.6 ? 3 : 2)}
+                                    fill={TRAJ_COLOR}
+                                    opacity={dot.alpha * 0.8}
+                                    style={{ filter: `drop-shadow(0 0 3px ${TRAJ_COLOR})` }}
+                                />
+                            ))}
                         </svg>
 
                         {/* --- RENDER PLAYER NHÂN VẬT --- */}
@@ -1162,6 +1344,20 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                             {playerState.power > 0 && (
                                 <div style={{ position: 'absolute', bottom: '-20px', left: '-10px', width: '60px', height: '10px', background: '#333', border: '2px solid white', borderRadius: '5px', overflow: 'hidden' }}>
                                     <div style={{ width: `${playerState.power}%`, height: '100%', background: playerState.power > 80 ? '#ff003c' : '#00ffaa', transition: 'width 0.1s' }} />
+                                </div>
+                            )}
+                            {/* Lửa CSS thuần - đẹp hơn emoji khi HP < 50% */}
+                            {playerState.hp > 0 && playerState.hp < 50 && (
+                                <div style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '36px', zIndex: 6, pointerEvents: 'none' }}>
+                                    {/* Tầng lửa dưới - đỏ cam */}
+                                    <div style={{ position: 'absolute', bottom: 0, left: '5px', width: '12px', height: '20px', background: 'radial-gradient(ellipse at 50% 100%, #ff4500, #ff8c00 60%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-a 0.25s ease-in-out infinite alternate', transformOrigin: 'bottom center' }} />
+                                    <div style={{ position: 'absolute', bottom: 0, left: '14px', width: '15px', height: '28px', background: 'radial-gradient(ellipse at 50% 100%, #ff6000, #ffaa00 50%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-b 0.2s ease-in-out infinite alternate', transformOrigin: 'bottom center' }} />
+                                    <div style={{ position: 'absolute', bottom: 0, left: '24px', width: '11px', height: '18px', background: 'radial-gradient(ellipse at 50% 100%, #ff3000, #ff7700 60%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-a 0.3s ease-in-out infinite alternate', transformOrigin: 'bottom center', animationDelay: '0.1s' }} />
+                                    {/* Tầng lửa giữ - vàng */}
+                                    <div style={{ position: 'absolute', bottom: '6px', left: '8px', width: '10px', height: '16px', background: 'radial-gradient(ellipse at 50% 100%, #ffea00, #ff8c00 70%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-b 0.18s ease-in-out infinite alternate', transformOrigin: 'bottom center', opacity: 0.9 }} />
+                                    <div style={{ position: 'absolute', bottom: '4px', left: '18px', width: '12px', height: '22px', background: 'radial-gradient(ellipse at 50% 100%, #fff176, #ffea00 60%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-a 0.22s ease-in-out infinite alternate', transformOrigin: 'bottom center', opacity: 0.85 }} />
+                                    {/* Tầng lửa trên - trắng vàng */}
+                                    <div style={{ position: 'absolute', bottom: '12px', left: '13px', width: '8px', height: '12px', background: 'radial-gradient(ellipse at 50% 100%, #ffffff, #fff9c4 80%, transparent)', borderRadius: '50% 50% 30% 30%', animation: 'flame-b 0.15s ease-in-out infinite alternate', transformOrigin: 'bottom center', opacity: 0.6 }} />
                                 </div>
                             )}
                         </div>
@@ -1353,6 +1549,22 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 @keyframes bounce-icon {
                     0% { transform: translateY(0px) scale(1); }
                     100% { transform: translateY(-12px) scale(1.1); }
+                }
+                @keyframes fire-flicker {
+                    0% { transform: translateY(0) scale(1); opacity: 0.9; }
+                    100% { transform: translateY(-6px) scale(1.2); opacity: 1; }
+                }
+                @keyframes flame-a {
+                    0% { transform: scaleX(1) scaleY(1) skewX(-3deg); opacity: 0.95; }
+                    100% { transform: scaleX(0.85) scaleY(1.25) skewX(5deg); opacity: 1; }
+                }
+                @keyframes flame-b {
+                    0% { transform: scaleX(0.9) scaleY(1.1) skewX(4deg); opacity: 0.85; }
+                    100% { transform: scaleX(1.1) scaleY(0.85) skewX(-4deg); opacity: 1; }
+                }
+                @keyframes ultra-pulse {
+                    0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 20px #ff4500, 0 0 40px rgba(255,69,0,0.4); }
+                    100% { transform: translateX(-50%) scale(1.06); box-shadow: 0 0 35px #ff8c00, 0 0 70px rgba(255,140,0,0.6); }
                 }
             `}</style>
 
