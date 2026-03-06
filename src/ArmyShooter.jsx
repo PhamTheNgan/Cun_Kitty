@@ -125,6 +125,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
     const [ultraUsed, setUltraUsed] = useState(false)
     const ultraUsedRef = useRef(false)
     const ultraVariantRef = useRef(0) // 0=multi-shot, 1=vortex, 2=thunder
+    const [showUI, setShowUI] = useState(true) // Toggle thanh điều khiển bên dưới
 
     // Helpers
     const spawnText = (text, cx, cy, color) => {
@@ -204,7 +205,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
         const isLeftSpawn = Math.random() > 0.5
         const pX = isLeftSpawn ? findValidX(50, WORLD_W / 3, TANK_W) : findValidX(WORLD_W * 2 / 3, WORLD_W - 50, TANK_W)
 
-        playerRef.current = { x: pX, y: 0, angle: 45, power: 0, hp: 100, isCharging: false, dir: isLeftSpawn ? 1 : -1, mp: 80, isMoving: false }
+        playerRef.current = { x: pX, y: 0, angle: 45, power: 0, hp: 500, maxHp: 500, isCharging: false, dir: isLeftSpawn ? 1 : -1, mp: 80, isMoving: false }
         playerRef.current.y = getTerrainY(pX, TANK_W) - TANK_H
         setPlayerState({ ...playerRef.current })
 
@@ -222,8 +223,8 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 id: Math.random(),
                 x: ex,
                 y: 0, // Sẽ tính lại
-                hp: Math.floor(lvl * 30 + 70),
-                maxHp: Math.floor(lvl * 30 + 70),
+                hp: Math.floor(lvl * 120 + 200),
+                maxHp: Math.floor(lvl * 120 + 200),
                 hue: Math.floor(Math.random() * 360)
             })
         }
@@ -328,20 +329,37 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 const estimatedTime = absDx / (neededSpeed * Math.cos(rad))
                 neededSpeed -= (windRef.current * dir) * (estimatedTime / 2.5)
 
-                // Tỉ lệ 90% Bắn Xuyên Trái Tim, 10% Trượt Nhẹ tấu hài
-                if (Math.random() > 0.9) {
-                    neededSpeed += (Math.random() - 0.5) * 2
-                }
+                // Tỉ lệ 15% Kamikaze (bay tới nổ tung x2 sát thương)
+                if (Math.random() < 0.15) {
+                    projectilesRef.current.push({
+                        id: Math.random(),
+                        x: shooter.x,
+                        y: shooter.y - 20,
+                        vx: (pX - shooter.x) / 30, // Tới đích trong 30 frame
+                        vy: (pY - shooter.y) / 30,
+                        type: 'enemy_kamikaze',
+                        isEnemy: true,
+                        shooterHue: shooter.hue
+                    })
+                    shooter.hp = 0 // Mèo hi sinh!
+                    setEnemies([...enemiesRef.current])
+                    spawnText('😾 Banzaiii!!!', shooter.x, shooter.y - 40, '#ff003c')
+                } else {
+                    // Tỉ lệ 90% Bắn Xuyên Trái Tim, 10% Trượt Nhẹ tấu hài
+                    if (Math.random() > 0.9) {
+                        neededSpeed += (Math.random() - 0.5) * 2
+                    }
 
-                projectilesRef.current.push({
-                    id: Math.random(),
-                    x: shooter.x,
-                    y: shooter.y - 20,
-                    vx: Math.cos(rad) * neededSpeed * dir,
-                    vy: -Math.sin(rad) * neededSpeed,
-                    type: 'normal', // Enemy bắn đạn nhẹ
-                    isEnemy: true
-                })
+                    projectilesRef.current.push({
+                        id: Math.random(),
+                        x: shooter.x,
+                        y: shooter.y - 20,
+                        vx: Math.cos(rad) * neededSpeed * dir,
+                        vy: -Math.sin(rad) * neededSpeed,
+                        type: 'normal', // Enemy bắn đạn nhẹ
+                        isEnemy: true
+                    })
+                }
 
                 turnRef.current = 'enemy_shooting'
                 setTurn('enemy_shooting')
@@ -399,7 +417,10 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
             p.isMoving = false
 
             if (turnRef.current === 'player') {
-                if (keys.has('ArrowLeft') || keys.has('KeyA')) {
+                const isChargingNow = p.isCharging
+
+                // Di chuyển trái/phải - cấm khi đang nạp lực
+                if (!isChargingNow && (keys.has('ArrowLeft') || keys.has('KeyA'))) {
                     if (p.dir !== -1) {
                         p.dir = -1
                         playerNeedsUpdate = true
@@ -408,7 +429,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                         const nextY = getTerrainY(p.x - 1.5, TANK_W) - TANK_H
                         if (p.y - nextY < 15) { // Kiểm tra leo dốc
                             p.x -= 1.5
-                            p.mp -= 2.5 // Tăng độ hao mòn xăng để đi ngắn lại
+                            p.mp -= 2.5
                             p.isMoving = true
                             if (p.mp < 0) p.mp = 0
                             if (p.x < TANK_W / 2) p.x = TANK_W / 2
@@ -416,7 +437,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                         }
                     }
                 }
-                if (keys.has('ArrowRight') || keys.has('KeyD')) {
+                if (!isChargingNow && (keys.has('ArrowRight') || keys.has('KeyD'))) {
                     if (p.dir !== 1) {
                         p.dir = 1
                         playerNeedsUpdate = true
@@ -433,12 +454,13 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                         }
                     }
                 }
-                if (keys.has('ArrowUp') || keys.has('KeyW')) {
+                // Chỉnh góc bắn - cấm khi đang nạp lực
+                if (!isChargingNow && (keys.has('ArrowUp') || keys.has('KeyW'))) {
                     p.angle += 1.5
                     if (p.angle > 180) p.angle = 180
                     playerNeedsUpdate = true
                 }
-                if (keys.has('ArrowDown') || keys.has('KeyS')) {
+                if (!isChargingNow && (keys.has('ArrowDown') || keys.has('KeyS'))) {
                     p.angle -= 1.5
                     if (p.angle < 0) p.angle = 0
                     playerNeedsUpdate = true
@@ -516,9 +538,8 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 }
             } // end else (Space not held)
 
-            if (playerNeedsUpdate) {
-                setPlayerState({ ...p })
-            }
+            // Luôn update player state để tránh render lag
+            setPlayerState({ ...p })
 
             // --- LÝ THUYẾT ĐẠN BAY CHI TIẾT ---
             let aliveProjs = []
@@ -541,9 +562,10 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 const isUltra = proj.type === 'ultra'
                 const isVortex = proj.type === 'ultra_vortex'
                 const isThunder = proj.type === 'ultra_thunder'
+                const isKamikaze = proj.type === 'enemy_kamikaze'
 
                 // Trọng lực và Gió
-                if (!isSaw && !isNuke && !isRainDrop) {
+                if (!isSaw && !isNuke && !isRainDrop && !isKamikaze) {
                     proj.vy += (isHeavy ? GRAVITY * 1.5 : GRAVITY)
                     proj.vx += windRef.current * (isHeavy ? 0.3 : 1)
                 } else if (isNuke || isRainDrop) {
@@ -603,11 +625,17 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                     if (proj.isEnemy) {
                         // Cú nổ của Mèo nhắm vào Player
                         const playerCenterY = getTerrainY(p.x, TANK_W) - TANK_H / 2
-                        if (Math.hypot(proj.x - p.x, proj.y - playerCenterY) < 40) {
+                        if (Math.hypot(proj.x - p.x, proj.y - playerCenterY) < (isKamikaze ? 60 : 40)) {
                             hit = true
-                            p.hp -= 20   // Địch chích nhẹ mất 20hp chống chết nhanh
+                            const eDmg = isKamikaze ? 50 : 25   // Kamikaze = x2 sát thương (50 HP)
+                            p.hp -= eDmg
                             playerNeedsUpdate = true
-                            spawnText('-20', p.x, playerCenterY - 40, '#ff003c')
+                            spawnText(`-${eDmg}`, p.x, playerCenterY - 40, '#ff003c')
+                            if (isKamikaze) {
+                                spawnText('💥 KAMIKAZE!', p.x, playerCenterY - 60, '#ff003c')
+                                setIsShaking(true)
+                                setTimeout(() => setIsShaking(false), 800)
+                            }
                             if (p.hp <= 0) {
                                 p.hp = 0
                                 setGameState('gameover')
@@ -815,10 +843,15 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
             }
 
             // --- WAIT TIMER LOGIC XỬ LÝ LƯỢT ---
-            // Chờ đạn và hiệu ứng bay xong mới tiếp tục (120 frames ~2s cho thunder/rain)
-            if (projectilesRef.current.length === 0) {
+            // Chờ đạn và hiệu ứng bay xong PLUS player/mèo rơi xong mới tiếp tục
+            const playerSettled = Math.abs(p.y - (getTerrainY(p.x, TANK_W) - TANK_H)) < 14
+            const enemiesSettled = enemiesRef.current.every(e => {
+                const ey = getTerrainY(e.x, 24) - 12
+                return Math.abs(e.y - ey) < 14 || ey >= WORLD_H - 20
+            })
+            if (projectilesRef.current.length === 0 && playerSettled && enemiesSettled) {
                 waitTimerRef.current += 1
-                if (waitTimerRef.current > 120) {
+                if (waitTimerRef.current > 60) { // ~1s sau khi mọi thứ ổn định
                     if (turnRef.current === 'shooting') {
                         // Player vừa bắn xong đạn rớt thì tới lượt AI Enemy!
                         turnRef.current = 'enemy'
@@ -852,22 +885,30 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 waitTimerRef.current = 0
             }
 
-            // --- XỬ LÝ RƠI (GRAVITY) CHO PLAYER VÀ MÈO ---
+            // --- XỬ LÝ RƠI (GRAVITY) CHO PLAYER ---
             let targetPY = getTerrainY(p.x, TANK_W) - TANK_H
-            if (p.y < targetPY) {
-                p.y += 8 // Lực rơi
+
+            // Nếu targetPY >= WORLD_H - 10: vực quá sâu = chết ngay
+            if (targetPY >= WORLD_H - 10 && p.hp > 0) {
+                p.hp = 0
+                p.y = WORLD_H + 100
+                keysRef.current.clear()
+                spawnText('Cún ơiii~ Ngã xuống vực rồiiiii 😭', p.x, WORLD_H - 120, '#ff003c')
+                setTimeout(() => setGameState('gameover'), 1500)
+            } else if (p.y < targetPY) {
+                p.y += 12 // Tăng tốc rơi để xử lý nhanh hơn
                 if (p.y > targetPY) p.y = targetPY
-                playerNeedsUpdate = true
-            } else if (p.y > targetPY) {
-                p.y -= 8 // Leo dốc
+            } else if (p.y > targetPY + 2) {
+                p.y -= 12
                 if (p.y < targetPY) p.y = targetPY
-                playerNeedsUpdate = true
             }
 
-            if (p.y > WORLD_H + 50 && p.hp > 0) {
+            // Dự phòng vự thảm - quá sâu so với đáy map
+            if (p.y > WORLD_H + 20 && p.hp > 0) {
                 p.hp = 0
                 playerNeedsUpdate = true
-                spawnText('Cún ơiii~ Ngã xuống vực rồiiii 😭', p.x, WORLD_H - 100, '#ff003c')
+                keysRef.current.clear()
+                spawnText('Cún ơiii~ Ngã xuống vực rồiiiii 😭', p.x, WORLD_H - 120, '#ff003c')
                 setTimeout(() => setGameState('gameover'), 1500)
             }
 
@@ -876,17 +917,18 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
             aliveEnemies.forEach(e => {
                 let targetEY = getTerrainY(e.x, 24) - 12
                 if (e.y < targetEY) {
-                    e.y += 8 // Mèo rơi
+                    e.y += 12 // Mèo rơi nhanh hơn
                     enemiesUpdated = true
-                } else if (e.y > targetEY) {
-                    e.y -= 8 // Mèo bò
+                } else if (e.y > targetEY + 2) {
+                    e.y -= 12
                     if (e.y < targetEY) e.y = targetEY
                     enemiesUpdated = true
                 }
 
-                if (e.y > WORLD_H + 50 && e.hp > 0) {
+                if ((e.y > WORLD_H + 50) || (targetEY >= WORLD_H - 20 && e.hp > 0)) {
                     e.hp = 0
-                    spawnText('Byebye bạn Mèo hihi~ 🐾', e.x, WORLD_H - 100, '#fff')
+                    enemiesUpdated = true
+                    spawnText('Byebye bạn Mèo hihi~ 🐾', e.x, Math.min(e.y, WORLD_H - 100), '#fff')
                 }
             })
 
@@ -899,7 +941,8 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                     setEnemies([...aliveEnemies]) // Just update positions when falling
                 }
 
-                if (remaining.length === 0 && p.hp > 0) {
+                const flyingProjs = projectilesRef.current.filter(p => p.isEnemy || p.type.startsWith('enemy_')).length
+                if (remaining.length === 0 && p.hp > 0 && flyingProjs === 0) {
                     setGameState('won')
                 }
             }
@@ -1034,170 +1077,114 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
     return (
         <div style={{ width: '100vw', height: '100vh', background: currTheme.bg, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-            <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(0,0,0,0.7)', padding: '10px 20px', borderRadius: '20px', border: `2px solid ${wind > 0 ? '#00ffaa' : '#ff4d6d'}`, color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 100 }}>
-                <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '5px' }}>🌬️ LỰC GIÓ TRỜI</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: wind > 0 ? '#00ffaa' : '#ff4d6d' }}>
-                    {wind > 0 ? '▶▶▶' : (wind < 0 ? '◀◀◀' : '0')}
-                </div>
-                <div style={{ fontSize: '20px', marginTop: '5px' }}>Cấp: {Math.abs(wind).toFixed(3)}</div>
-            </div>
+            {/* HUD TOP BAR - gọn nhẹ, không chồng map */}
+            <div style={{ position: 'absolute', top: 8, left: 0, right: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', pointerEvents: 'none' }}>
 
-            <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 100 }}>
-                <button onClick={() => setGameState('menu')} style={{ padding: '10px 25px', background: 'rgba(0,0,0,0.6)', color: '#00f3ff', border: '2px solid #00f3ff', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' }}>🏳️ Cún Đầu Hàng</button>
-            </div>
+                {/* Trái: Nút thoát */}
+                <button
+                    onClick={() => setGameState('menu')}
+                    style={{ pointerEvents: 'auto', padding: '5px 14px', background: 'rgba(0,0,0,0.65)', color: '#00f3ff', border: '1.5px solid #00f3ff', borderRadius: '14px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem' }}
+                >🏳️ Thoát</button>
 
-            {/* THÔNG BÁO LƯỢT ĐÁNH */}
-            <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ padding: '10px 30px', borderRadius: '30px', background: turn === 'player' ? '#00ffaa' : (turn === 'enemy' ? '#ff003c' : '#333'), color: turn === 'player' ? 'black' : 'white', fontWeight: 'bold', fontSize: '1.2rem', textShadow: '0 0 5px rgba(255,255,255,0.5)', transition: 'background 0.3s', boxShadow: `0 0 20px ${turn === 'player' ? '#00ffaa' : '#ff4d6d'}` }}>
-                    {turn === 'player' ? `🐶 Cún tới lượt rồi! Nhanh nhanh nào~ ⏱ ${timeLeft}s` : (turn === 'enemy' ? '😼 Ôi không, bọn Mèo đang ngắm...' : '🚀 Đạn đang bay bay~')}
-                </div>
-            </div>
-
-            <div style={{ position: 'absolute', bottom: 15, width: '100%', display: 'flex', justifyContent: 'center', gap: '20px', zIndex: 100, pointerEvents: 'none' }}>
-
-                {/* --- KHO ĐẠN --- */}
-                <div style={{ pointerEvents: 'auto', background: 'rgba(0,0,0,0.8)', padding: '10px 20px', borderRadius: '30px', border: '2px solid #555', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 5px 20px rgba(0,0,0,0.5)' }}>
-                    <span style={{ color: '#aaa', fontWeight: 'bold', fontSize: '0.9rem' }}>KHO ĐẠN:</span>
-                    <button
-                        onClick={() => { setAmmoType('normal'); ammoRef.current = 'normal' }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'normal' ? '#00f3ff' : 'transparent', color: ammoType === 'normal' ? 'black' : '#00f3ff', border: '2px solid #00f3ff', cursor: 'pointer', fontWeight: 'bold', outline: 'none' }}
-                    >
-                        Đạn Mỏng
-                    </button>
-                    <button
-                        onClick={() => { setAmmoType('heavy'); ammoRef.current = 'heavy' }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'heavy' ? '#ffaa00' : 'transparent', color: ammoType === 'heavy' ? 'black' : '#ffaa00', border: '2px solid #ffaa00', cursor: 'pointer', fontWeight: 'bold', outline: 'none' }}
-                    >
-                        Bom Tạ
-                    </button>
+                {/* Giữa: Lượt đánh */}
+                <div style={{ padding: '6px 22px', borderRadius: '22px', background: turn === 'player' ? '#00ffaa' : (turn === 'enemy' ? '#ff003c' : '#333'), color: turn === 'player' ? 'black' : 'white', fontWeight: 'bold', fontSize: '1rem', textShadow: '0 0 5px rgba(255,255,255,0.5)', transition: 'background 0.3s', boxShadow: `0 0 16px ${turn === 'player' ? '#00ffaa' : '#ff4d6d'}` }}>
+                    {turn === 'player' ? `🐶 Cún tới lượt! ⏱ ${timeLeft}s` : (turn === 'enemy' ? '😼 Mèo đang ngắm...' : '🚀 Đạn đang bay~')}
                 </div>
 
-                {/* --- RƯƠNG ĐỒ --- */}
-                <div style={{ pointerEvents: 'auto', background: 'rgba(0,0,0,0.8)', padding: '10px 20px', borderRadius: '30px', border: '2px solid #ff007f', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', boxShadow: '0 5px 20px rgba(255,0,127,0.3)', maxWidth: '900px' }}>
-                    <span style={{ color: '#ffea00', fontWeight: 'bold', fontSize: '0.9rem' }}>🎒 RƯƠNG:</span>
-
-                    <button
-                        onClick={() => {
-                            if (!itemUsedThisTurn && items.hp > 0 && turn === 'player' && playerRef.current.hp < 100) {
-                                setItems(prev => ({ ...prev, hp: prev.hp - 1 }))
-                                let healAmt = Math.min(100 - playerRef.current.hp, 50)
-                                playerRef.current.hp += healAmt
-                                setPlayerState({ ...playerRef.current })
-                                spawnText(`+${healAmt} HP`, playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
-                                setItemUsedThisTurn(true)
-                            }
-                        }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: '#ff4d6d', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.hp > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.hp > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.hp > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Bơm 50HP"
-                    >
-                        ❤️{items.hp}
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            if (!itemUsedThisTurn && items.hpFull > 0 && turn === 'player' && playerRef.current.hp < 100) {
-                                setItems(prev => ({ ...prev, hpFull: prev.hpFull - 1 }))
-                                playerRef.current.hp = 100
-                                setPlayerState({ ...playerRef.current })
-                                spawnText(`+100% MAX HP`, playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
-                                setItemUsedThisTurn(true)
-                            }
-                        }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: '#ff003c', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.hpFull > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.hpFull > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.hpFull > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Hồi Sinh Đầy Bình 100% Máu!"
-                    >
-                        💖{items.hpFull}
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            if (!itemUsedThisTurn && items.wind > 0 && turn === 'player') {
-                                setItems(prev => ({ ...prev, wind: prev.wind - 1 }))
-                                setWind(0)
-                                windRef.current = 0
-                                spawnText('Gió Ngừng Thổi!', playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
-                                setItemUsedThisTurn(true)
-                            }
-                        }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: '#00ccff', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.wind > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.wind > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.wind > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Hủy Lực Gió Trở Về 0"
-                    >
-                        🌀{items.wind}
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.x2 > 0 && turn === 'player') { setActiveMod('x2'); activeModRef.current = 'x2'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: activeMod === 'x2' ? '#ffaa00' : '#444', color: 'white', border: activeMod === 'x2' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x2 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x2 > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.x2 > 0) ? 'none' : 'grayscale(100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        title="Bắn Cùng Lúc 2 Viên Đạn"
-                    >
-                        <span style={{ fontSize: '12px' }}>x2</span>
-                        <span style={{ fontSize: '9px', color: '#ffea00' }}>{items.x2}</span>
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.x3 > 0 && turn === 'player') { setActiveMod('x3'); activeModRef.current = 'x3'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: activeMod === 'x3' ? '#ff3300' : '#444', color: 'white', border: activeMod === 'x3' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x3 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x3 > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.x3 > 0) ? 'none' : 'grayscale(100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        title="Bắn Cùng Lúc 3 Viên Đạn"
-                    >
-                        <span style={{ fontSize: '12px' }}>x3</span>
-                        <span style={{ fontSize: '9px', color: '#ffea00' }}>{items.x3}</span>
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.x5 > 0 && turn === 'player') { setActiveMod('x5'); activeModRef.current = 'x5'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px', borderRadius: '50%', width: '40px', height: '40px', background: activeMod === 'x5' ? '#cc00ff' : '#444', color: 'white', border: activeMod === 'x5' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x5 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x5 > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.x5 > 0) ? 'none' : 'grayscale(100%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        title="Bắn Trùm 5 Viên Đạn Hủy Diệt"
-                    >
-                        <span style={{ fontSize: '12px' }}>x5</span>
-                        <span style={{ fontSize: '9px', color: '#ffea00' }}>{items.x5}</span>
-                    </button>
-
-                    <div style={{ width: '2px', height: '30px', background: '#555', margin: '0 5px' }}></div>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.helicopter > 0) { setAmmoType('helicopter'); ammoRef.current = 'helicopter'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'helicopter' ? '#00ffaa' : 'transparent', color: ammoType === 'helicopter' ? 'black' : '#00ffaa', border: '2px solid #00ffaa', cursor: (!itemUsedThisTurn && items.helicopter > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.helicopter > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.helicopter > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Gọi Trực Thăng thả Bom Nuke Diệt Gọn Khu Vực (1 Cú Click)"
-                    >
-                        🚁 Nuke ({items.helicopter})
-                    </button>
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.saw > 0) { setAmmoType('saw'); ammoRef.current = 'saw'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'saw' ? '#9c27b0' : 'transparent', color: ammoType === 'saw' ? 'white' : '#9c27b0', border: '2px solid #9c27b0', cursor: (!itemUsedThisTurn && items.saw > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.saw > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.saw > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Răng Cưa Xuyên Map, Khoét Đất, Cắn 80% Máu Quái Vật"
-                    >
-                        ⚙️ Cưa ({items.saw})
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.rain > 0) { setAmmoType('rain'); ammoRef.current = 'rain'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'rain' ? '#00ccff' : 'transparent', color: ammoType === 'rain' ? 'black' : '#00ccff', border: '2px solid #00ccff', cursor: (!itemUsedThisTurn && items.rain > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.rain > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.rain > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Mưa Đạn rào rào phá nát màn chơi"
-                    >
-                        🌧️ Mưa ({items.rain})
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.poison > 0) { setAmmoType('poison'); ammoRef.current = 'poison'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'poison' ? '#00ffaa' : 'transparent', color: ammoType === 'poison' ? 'black' : '#00ffaa', border: '2px solid #00ffaa', cursor: (!itemUsedThisTurn && items.poison > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.poison > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.poison > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Tơ Độc - Rút 15% Max HP mỗi turn (3 Lượt)"
-                    >
-                        ☠️ Độc ({items.poison})
-                    </button>
-
-                    <button
-                        onClick={() => { if (!itemUsedThisTurn && items.teleport > 0) { setAmmoType('teleport'); ammoRef.current = 'teleport'; setItemUsedThisTurn(true); } }}
-                        style={{ padding: '8px 15px', borderRadius: '15px', background: ammoType === 'teleport' ? '#cc00ff' : 'transparent', color: ammoType === 'teleport' ? 'white' : '#cc00ff', border: '2px solid #cc00ff', cursor: (!itemUsedThisTurn && items.teleport > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.teleport > 0) ? 1 : 0.2, filter: (!itemUsedThisTurn && items.teleport > 0) ? 'none' : 'grayscale(100%)' }}
-                        title="Dịch Chuyển Tử Chớp - Bay đến chỗ bắn!"
-                    >
-                        ✨ Bay ({items.teleport})
-                    </button>
-
+                {/* Phải: Lực gió compact */}
+                <div style={{ pointerEvents: 'none', background: 'rgba(0,0,0,0.65)', padding: '5px 12px', borderRadius: '14px', border: `1.5px solid ${wind > 0 ? '#00ffaa' : (wind < 0 ? '#ff4d6d' : '#555')}`, color: wind > 0 ? '#00ffaa' : (wind < 0 ? '#ff4d6d' : '#aaa'), fontWeight: 'bold', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>🌬️</span>
+                    <span>{wind > 0 ? '▶▶' : (wind < 0 ? '◀◀' : '—')}</span>
+                    <span>{Math.abs(wind).toFixed(2)}</span>
                 </div>
             </div>
 
-            {/* NÚT ULTRA - chỉ hiện khi HP < 50% và chưa dùng */}
-            {playerState.hp > 0 && playerState.hp < 50 && !ultraUsed && turn === 'player' && (
+            {/* BOTTOM TOOLBAR - nút toggle ẩn/hiện */}
+            <div style={{ position: 'absolute', bottom: 0, width: '100%', zIndex: 100, pointerEvents: 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '4px' }}>
+
+                    {/* Nút thu/mở */}
+                    <button
+                        onClick={() => setShowUI(prev => !prev)}
+                        style={{ pointerEvents: 'auto', marginBottom: '3px', padding: '3px 20px', background: 'rgba(0,0,0,0.7)', border: '1px solid #555', borderRadius: '10px', color: '#aaa', fontSize: '0.72rem', cursor: 'pointer' }}
+                    >
+                        {showUI ? '▼ Thu Gọn' : '▲ Mở Rương & Đạn'}
+                    </button>
+
+                    {showUI && (
+                        <div style={{ pointerEvents: 'auto', display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', padding: '7px 14px', background: 'rgba(0,0,0,0.88)', borderRadius: '18px', border: '1px solid #444', maxWidth: '99vw' }}>
+
+                            {/* KHO ĐẠN */}
+                            <span style={{ color: '#aaa', fontWeight: 'bold', fontSize: '0.78rem', alignSelf: 'center' }}>🔫</span>
+                            <button onClick={() => { setAmmoType('normal'); ammoRef.current = 'normal' }} style={{ padding: '5px 11px', borderRadius: '11px', background: ammoType === 'normal' ? '#00f3ff' : 'transparent', color: ammoType === 'normal' ? 'black' : '#00f3ff', border: '2px solid #00f3ff', cursor: 'pointer', fontWeight: 'bold', outline: 'none', fontSize: '0.78rem' }}>Đạn</button>
+                            <button onClick={() => { setAmmoType('heavy'); ammoRef.current = 'heavy' }} style={{ padding: '5px 11px', borderRadius: '11px', background: ammoType === 'heavy' ? '#ffaa00' : 'transparent', color: ammoType === 'heavy' ? 'black' : '#ffaa00', border: '2px solid #ffaa00', cursor: 'pointer', fontWeight: 'bold', outline: 'none', fontSize: '0.78rem' }}>Bom Tạ</button>
+
+                            <div style={{ width: '1px', height: '22px', background: '#555', alignSelf: 'center' }} />
+
+                            {/* RƯƠNG ĐỒ */}
+                            <span style={{ color: '#ffea00', fontWeight: 'bold', fontSize: '0.78rem', alignSelf: 'center' }}>🎒</span>
+
+                            <button
+                                onClick={() => {
+                                    if (!itemUsedThisTurn && items.hp > 0 && turn === 'player' && playerRef.current.hp < 500) {
+                                        setItems(prev => ({ ...prev, hp: prev.hp - 1 }))
+                                        let healAmt = Math.min(500 - playerRef.current.hp, 150)
+                                        playerRef.current.hp += healAmt
+                                        setPlayerState({ ...playerRef.current })
+                                        spawnText(`+${healAmt} HP`, playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
+                                        setItemUsedThisTurn(true)
+                                    }
+                                }}
+                                style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: '#ff4d6d', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.hp > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.hp > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.hp > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.72rem' }}
+                                title="Bơm 150HP"
+                            >❤️{items.hp}</button>
+
+                            <button
+                                onClick={() => {
+                                    if (!itemUsedThisTurn && items.hpFull > 0 && turn === 'player' && playerRef.current.hp < 500) {
+                                        setItems(prev => ({ ...prev, hpFull: prev.hpFull - 1 }))
+                                        playerRef.current.hp = 500
+                                        setPlayerState({ ...playerRef.current })
+                                        spawnText(`+MAX HP`, playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
+                                        setItemUsedThisTurn(true)
+                                    }
+                                }}
+                                style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: '#ff003c', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.hpFull > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.hpFull > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.hpFull > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.72rem' }}
+                                title="Hồi Sinh Đầy 100% Máu!"
+                            >💖{items.hpFull}</button>
+
+                            <button
+                                onClick={() => {
+                                    if (!itemUsedThisTurn && items.wind > 0 && turn === 'player') {
+                                        setItems(prev => ({ ...prev, wind: prev.wind - 1 }))
+                                        setWind(0); windRef.current = 0
+                                        spawnText('Gió Ngừng Thổi!', playerRef.current.x, playerRef.current.y - 60, '#00ffaa')
+                                        setItemUsedThisTurn(true)
+                                    }
+                                }}
+                                style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: '#00ccff', color: 'white', border: 'none', cursor: (!itemUsedThisTurn && items.wind > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.wind > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.wind > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.72rem' }}
+                                title="Hủy Lực Gió"
+                            >🌀{items.wind}</button>
+
+                            <button onClick={() => { if (!itemUsedThisTurn && items.x2 > 0 && turn === 'player') { setActiveMod('x2'); activeModRef.current = 'x2'; setItemUsedThisTurn(true); } }} style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: activeMod === 'x2' ? '#ffaa00' : '#444', color: 'white', border: activeMod === 'x2' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x2 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x2 > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.x2 > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.7rem' }} title="x2 Đạn">x2<br /><span style={{ fontSize: '0.6rem', color: '#ffea00' }}>{items.x2}</span></button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.x3 > 0 && turn === 'player') { setActiveMod('x3'); activeModRef.current = 'x3'; setItemUsedThisTurn(true); } }} style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: activeMod === 'x3' ? '#ff3300' : '#444', color: 'white', border: activeMod === 'x3' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x3 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x3 > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.x3 > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.7rem' }} title="x3 Đạn">x3<br /><span style={{ fontSize: '0.6rem', color: '#ffea00' }}>{items.x3}</span></button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.x5 > 0 && turn === 'player') { setActiveMod('x5'); activeModRef.current = 'x5'; setItemUsedThisTurn(true); } }} style={{ padding: '5px', borderRadius: '50%', width: '34px', height: '34px', background: activeMod === 'x5' ? '#cc00ff' : '#444', color: 'white', border: activeMod === 'x5' ? '2px solid white' : 'none', cursor: (!itemUsedThisTurn && items.x5 > 0 && turn === 'player') ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.x5 > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.x5 > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.7rem' }} title="x5 Đạn">x5<br /><span style={{ fontSize: '0.6rem', color: '#ffea00' }}>{items.x5}</span></button>
+
+                            <div style={{ width: '1px', height: '22px', background: '#555', alignSelf: 'center' }} />
+
+                            <button onClick={() => { if (!itemUsedThisTurn && items.helicopter > 0) { setAmmoType('helicopter'); ammoRef.current = 'helicopter'; setItemUsedThisTurn(true); } }} style={{ padding: '5px 9px', borderRadius: '11px', background: ammoType === 'helicopter' ? '#00ffaa' : 'transparent', color: ammoType === 'helicopter' ? 'black' : '#00ffaa', border: '2px solid #00ffaa', cursor: (!itemUsedThisTurn && items.helicopter > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.helicopter > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.helicopter > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.75rem' }} title="Nuke">🚁{items.helicopter}</button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.saw > 0) { setAmmoType('saw'); ammoRef.current = 'saw'; setItemUsedThisTurn(true); } }} style={{ padding: '5px 9px', borderRadius: '11px', background: ammoType === 'saw' ? '#9c27b0' : 'transparent', color: ammoType === 'saw' ? 'white' : '#9c27b0', border: '2px solid #9c27b0', cursor: (!itemUsedThisTurn && items.saw > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.saw > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.saw > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.75rem' }} title="Răng Cưa">⚙️{items.saw}</button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.rain > 0) { setAmmoType('rain'); ammoRef.current = 'rain'; setItemUsedThisTurn(true); } }} style={{ padding: '5px 9px', borderRadius: '11px', background: ammoType === 'rain' ? '#00ccff' : 'transparent', color: ammoType === 'rain' ? 'black' : '#00ccff', border: '2px solid #00ccff', cursor: (!itemUsedThisTurn && items.rain > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.rain > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.rain > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.75rem' }} title="Mưa Đạn">🌧️{items.rain}</button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.poison > 0) { setAmmoType('poison'); ammoRef.current = 'poison'; setItemUsedThisTurn(true); } }} style={{ padding: '5px 9px', borderRadius: '11px', background: ammoType === 'poison' ? '#00ffaa' : 'transparent', color: ammoType === 'poison' ? 'black' : '#00ffaa', border: '2px solid #00ffaa', cursor: (!itemUsedThisTurn && items.poison > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.poison > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.poison > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.75rem' }} title="Độc">☠️{items.poison}</button>
+                            <button onClick={() => { if (!itemUsedThisTurn && items.teleport > 0) { setAmmoType('teleport'); ammoRef.current = 'teleport'; setItemUsedThisTurn(true); } }} style={{ padding: '5px 9px', borderRadius: '11px', background: ammoType === 'teleport' ? '#cc00ff' : 'transparent', color: ammoType === 'teleport' ? 'white' : '#cc00ff', border: '2px solid #cc00ff', cursor: (!itemUsedThisTurn && items.teleport > 0) ? 'pointer' : 'not-allowed', fontWeight: 'bold', outline: 'none', opacity: (!itemUsedThisTurn && items.teleport > 0) ? 1 : 0.25, filter: (!itemUsedThisTurn && items.teleport > 0) ? 'none' : 'grayscale(100%)', fontSize: '0.75rem' }} title="Dịch Chuyển">✨{items.teleport}</button>
+
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* NÚT ULTRA - chỉ hiện khi HP < 50% (500 MAX HP => < 250) và chưa dùng */}
+            {playerState.hp > 0 && playerState.hp < 250 && !ultraUsed && turn === 'player' && (
                 <div style={{ position: 'absolute', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 150 }}>
                     <button
                         onClick={() => {
@@ -1226,8 +1213,8 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                 </div>
             )}
 
-            {/* GỢI Ý khi HP < 50% và chưa dùng ultra */}
-            {playerState.hp > 0 && playerState.hp < 50 && !ultraUsed && turn === 'player' && (
+            {/* GỢI Ý khi HP < 50% (250) và chưa dùng ultra */}
+            {playerState.hp > 0 && playerState.hp < 250 && !ultraUsed && turn === 'player' && (
                 <div style={{
                     position: 'absolute', top: '70px', left: '50%', transform: 'translateX(-50%)',
                     background: 'rgba(255,69,0,0.9)', padding: '8px 20px', borderRadius: '20px',
@@ -1288,7 +1275,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                         }}>
                             {/* Thanh Máu & MP */}
                             <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '40px', background: 'rgba(255, 0, 0, 0.7)', height: '6px', borderRadius: '3px', overflow: 'hidden', border: '1px solid #000' }}>
-                                <div style={{ width: `${playerState.hp}%`, background: '#00ffaa', height: '100%', transition: 'width 0.3s' }} />
+                                <div style={{ width: `${(playerState.hp / 500) * 100}%`, background: '#00ffaa', height: '100%', transition: 'width 0.3s' }} />
                             </div>
                             <div style={{ position: 'absolute', top: '50px', left: '50%', transform: 'translateX(-50%)', width: '40px', background: 'rgba(51, 51, 51, 0.7)', height: '5px', borderRadius: '2px', overflow: 'hidden', border: '1px solid #000' }}>
                                 <div style={{ width: `${Math.max(0, (playerState.mp / 80) * 100)}%`, background: '#ffea00', height: '100%' }} />
@@ -1347,7 +1334,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                                 </div>
                             )}
                             {/* Lửa CSS thuần - đẹp hơn emoji khi HP < 50% */}
-                            {playerState.hp > 0 && playerState.hp < 50 && (
+                            {playerState.hp > 0 && playerState.hp < 250 && (
                                 <div style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '36px', zIndex: 6, pointerEvents: 'none' }}>
                                     {/* Tầng lửa dưới - đỏ cam */}
                                     <div style={{ position: 'absolute', bottom: 0, left: '5px', width: '12px', height: '20px', background: 'radial-gradient(ellipse at 50% 100%, #ff4500, #ff8c00 60%, transparent)', borderRadius: '50% 50% 20% 20%', animation: 'flame-a 0.25s ease-in-out infinite alternate', transformOrigin: 'bottom center' }} />
@@ -1407,6 +1394,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                             const isSaw = proj.type === 'saw'
                             const isNuke = proj.type === 'nuke'
                             const isRainDrop = proj.type === 'rain_drop'
+                            const isKamikaze = proj.type === 'enemy_kamikaze'
 
                             const typeColors = {
                                 'heavy': '#ffaa00',
@@ -1415,6 +1403,7 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                                 'rain': '#00ccff',
                                 'rain_drop': '#00f3ff',
                                 'teleport': '#cc00ff',
+                                'enemy_kamikaze': '#ff003c',
                                 'normal': '#00f3ff'
                             }
                             const pColor = typeColors[proj.type] || '#00f3ff'
@@ -1422,7 +1411,14 @@ export default function ArmyShooter({ onBack, onFinish, avatar }) {
                             return (
                                 <div key={proj.id} style={{
                                     position: 'absolute', left: proj.x, top: proj.y, zIndex: 10,
-                                    ...(isSaw || isNuke ? {} : {
+                                    ...(isKamikaze ? {
+                                        width: '40px', height: '40px',
+                                        backgroundImage: `url(${kittyImg})`, backgroundSize: 'cover',
+                                        borderRadius: '50%', boxShadow: '0 0 20px #ff003c',
+                                        transform: 'translate(-50%, -50%) rotate(720deg)',
+                                        transition: 'transform 1s',
+                                        filter: `hue-rotate(${proj.shooterHue || 0}deg)`
+                                    } : isSaw || isNuke ? {} : {
                                         width: (proj.type === 'heavy' || isRainDrop) ? '16px' : '10px',
                                         height: (proj.type === 'heavy' || isRainDrop) ? '16px' : '10px',
                                         background: pColor,
