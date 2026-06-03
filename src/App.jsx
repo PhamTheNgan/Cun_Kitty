@@ -4,12 +4,14 @@ import kittyImg from '/kitty.png'
 import KittyMiner from './KittyMiner'
 import Game3D from './Game3D'
 import ArmyShooter from './ArmyShooter'
+import TMSScreen from './TMSScreen'
+
 
 function App() {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
     // App screen: 'login' | 'menu' | 'game' | 'miner'
-    const [screen, setScreen] = useState(isLocal ? 'menu' : 'login')
+    const [screen, setScreen] = useState(false ? 'menu' : 'login')
     const [showProfile, setShowProfile] = useState(false)
     const [totalPoints, setTotalPoints] = useState(() => parseInt(localStorage.getItem('kitty_points') || '0'))
     const [checkinToast, setCheckinToast] = useState('')
@@ -243,6 +245,11 @@ function App() {
         </div>
     )
 
+    // ========== TMS SCREEN ==========
+    if (screen === 'tms') {
+        return <TMSScreen onBack={() => setScreen('login')} />
+    }
+
     // ========== LOGIN SCREEN ==========
     if (screen === 'login') {
         return (
@@ -274,11 +281,13 @@ function App() {
                         </div>
                     </div>
                     <button onClick={handleLogin} className="login-btn">Vào chơi 🎮</button>
+                    <button onClick={() => setScreen('tms')} className="login-tms-btn">Vào TMS 🕒</button>
                     {loginError && <p className="login-error">{loginError}</p>}
                 </div>
             </div>
         )
     }
+
 
     // ========== MENU SCREEN ==========
     if (screen === 'menu') {

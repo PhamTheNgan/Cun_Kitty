@@ -340,6 +340,31 @@
   transform: translateY(0);
 }
 
+.login-tms-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 1rem;
+  background: linear-gradient(135deg, #ff758f, #ff4d6d);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-size: 1.3rem;
+  font-family: 'Comic Sans MS', cursive;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 8px 25px rgba(255, 77, 109, 0.4);
+}
+
+.login-tms-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(255, 77, 109, 0.5);
+}
+
+.login-tms-btn:active {
+  transform: translateY(0);
+}
+
+
 .login-error {
   margin-top: 1.2rem;
   color: #ff4d6d;

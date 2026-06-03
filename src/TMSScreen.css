@@ -1,0 +1,1123 @@
+/* TMSScreen.css */
+
+.tms-screen-wrapper {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #ffe5ec 0%, #ffc2cd 100%);
+    padding: 40px 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Floating Back Button */
+.tms-back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 3px solid #ffb3c1;
+    border-radius: 25px;
+    color: #ff4d6d;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 15px rgba(255, 77, 109, 0.2);
+    transition: all 0.2s ease-in-out;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tms-back-btn:hover {
+    background: #ff4d6d;
+    color: white;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(255, 77, 109, 0.35);
+}
+
+.back-kitty-btn-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+/* Inline Back Button inside the Simulator screen content */
+.tms-back-inline-btn {
+    background: none;
+    border: none;
+    color: #ff4d6d;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    margin-bottom: 15px;
+    transition: transform 0.2s ease-in-out;
+    outline: none;
+    text-shadow: 0 1px 0px white;
+}
+
+.tms-back-inline-btn:hover {
+    transform: translateX(-3px);
+    color: #ff758f;
+}
+
+
+/* Toast styling */
+.tms-toast {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff4d6d, #ff758f);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    box-shadow: 0 8px 25px rgba(255, 77, 109, 0.35);
+    z-index: 9999;
+    animation: tmsToastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: 'Comic Sans MS', cursive;
+    border: 2px solid white;
+    text-align: center;
+    max-width: 85%;
+    width: max-content;
+    box-sizing: border-box;
+    line-height: 1.45;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@keyframes tmsToastIn {
+    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* Container to hold both simulator and external ears */
+.phone-container {
+    position: relative;
+    padding-top: 18px; /* Leave space for the ears to stick out of the phone */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* Kitty ears attached to the outer phone case container (outside the screen) */
+.kitty-ear {
+    position: absolute;
+    top: 0px; /* Sticks out above the phone bezel */
+    width: 48px;
+    height: 38px;
+    background: #ff9ebb; /* Match outer pink case */
+    border-top-left-radius: 50% 100%;
+    border-top-right-radius: 50% 100%;
+    box-shadow: inset 0 5px 8px rgba(255, 255, 255, 0.4);
+    z-index: 5;
+    transition: transform 0.2s ease-in-out;
+}
+
+.kitty-ear::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 32px;
+    height: 24px;
+    background: #ffc2cd; /* Ear pink center */
+    border-top-left-radius: 50% 100%;
+    border-top-right-radius: 50% 100%;
+}
+
+.kitty-ear.left {
+    left: 45px;
+    transform: rotate(-16deg);
+}
+
+.kitty-ear.right {
+    right: 45px;
+    transform: rotate(16deg);
+}
+
+/* Gentle bounce animation when simulator is hovered */
+.phone-container:hover .kitty-ear.left {
+    transform: rotate(-12deg) scale(1.08) translateY(-2px);
+}
+
+.phone-container:hover .kitty-ear.right {
+    transform: rotate(12deg) scale(1.08) translateY(-2px);
+}
+
+.kitty-bow {
+    position: absolute;
+    top: 4px; /* Positioned nicely on the top pink case bezel */
+    left: 50%;
+    transform: translateX(-50%) scale(1.1);
+    z-index: 25; /* Renders on top of the bezel and ears */
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    transition: transform 0.2s ease-in-out;
+}
+
+.phone-container:hover .kitty-bow {
+    transform: translateX(-50%) scale(1.2) translateY(-2px);
+}
+
+/* Phone Simulator Frame */
+.phone-simulator {
+    position: relative;
+    width: 360px;
+    height: 740px;
+    background: #121212; /* Black phone front glass face */
+    border-radius: 46px;
+    border: 12px solid #ff9ebb; /* Adorable pink phone case */
+    padding: 8px; /* Forms the black bezel around the screen */
+    box-shadow: 
+        0 25px 60px rgba(255, 77, 109, 0.3),
+        0 0 0 1px #ffccd5; /* High quality case highlight rim */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* CRITICAL: Clips status bar and home indicator backgrounds perfectly! */
+    font-family: 'Comic Sans MS', cursive;
+    z-index: 10;
+}
+
+.phone-inner-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #fff0f3;
+    border-radius: 28px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+}
+
+/* iPhone 17 Pro Max Dynamic Island */
+.dynamic-island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 28px;
+    background: #000000;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover Dynamic Island expand animation */
+.dynamic-island:hover {
+    width: 220px;
+    height: 40px;
+    top: 6px;
+}
+
+.dynamic-island-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.island-dot {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #22c55e;
+    z-index: 20;
+}
+
+.island-kitty-wrapper {
+    position: absolute;
+    left: 10px;
+    top: calc(50% - 10px);
+    width: 20px;
+    height: 20px;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: kittyRunShort 4s linear infinite;
+}
+
+.dynamic-island:hover .island-kitty-wrapper {
+    animation: kittyRunLong 5s linear infinite;
+}
+
+.island-kitty-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    animation: kittyLively 11s ease-in-out infinite;
+}
+
+/* Spin animation when clicked */
+.island-kitty-img.spin-active {
+    animation: kittySpinClick 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.island-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: bold;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 15;
+}
+
+.dynamic-island:hover .island-text {
+    opacity: 1;
+}
+
+@keyframes kittyRunShort {
+    0% { transform: translateX(0) scaleX(1); }
+    45% { transform: translateX(65px) scaleX(1); }
+    50% { transform: translateX(65px) scaleX(-1); }
+    95% { transform: translateX(0) scaleX(-1); }
+    100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes kittyRunLong {
+    0% { transform: translateX(0) scaleX(1); }
+    45% { transform: translateX(170px) scaleX(1); }
+    50% { transform: translateX(170px) scaleX(-1); }
+    95% { transform: translateX(0) scaleX(-1); }
+    100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes kittyRunShortMobile {
+    0% { transform: translateX(0) scaleX(1); }
+    45% { transform: translateX(50px) scaleX(1); }
+    50% { transform: translateX(50px) scaleX(-1); }
+    95% { transform: translateX(0) scaleX(-1); }
+    100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes kittyRunLongMobile {
+    0% { transform: translateX(0) scaleX(1); }
+    45% { transform: translateX(130px) scaleX(1); }
+    50% { transform: translateX(130px) scaleX(-1); }
+    95% { transform: translateX(0) scaleX(-1); }
+    100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes kittyLively {
+    0% { transform: translateY(0) rotate(0deg); }
+    5% { transform: translateY(-0.8px) rotate(0deg); }
+    10% { transform: translateY(0) rotate(0deg); }
+    15% { transform: translateY(-0.8px) rotate(0deg); }
+    20% { transform: translateY(0) rotate(0deg); }
+    /* Jump 1 */
+    22% { transform: translateY(-3px) rotate(-8deg); }
+    24% { transform: translateY(-4px) rotate(0deg); }
+    26% { transform: translateY(-3px) rotate(8deg); }
+    28% { transform: translateY(0) rotate(0deg); }
+    33% { transform: translateY(-0.8px) rotate(0deg); }
+    38% { transform: translateY(0) rotate(0deg); }
+    /* Double Jump */
+    45% { transform: translateY(-4.5px) rotate(0deg); }
+    47% { transform: translateY(-1.5px) rotate(0deg); }
+    49% { transform: translateY(-3.5px) rotate(0deg); }
+    51% { transform: translateY(0) rotate(0deg); }
+    56% { transform: translateY(-0.8px) rotate(0deg); }
+    61% { transform: translateY(0) rotate(0deg); }
+    66% { transform: translateY(-0.8px) rotate(0deg); }
+    70% { transform: translateY(0) rotate(0deg); }
+    /* Flip! */
+    74% { transform: translateY(0) rotate(0deg); }
+    77% { transform: translateY(-5px) rotate(180deg); }
+    80% { transform: translateY(0) rotate(360deg); }
+    80.1% { transform: translateY(0) rotate(0deg); } /* Instant reset rotation */
+    85% { transform: translateY(-0.8px) rotate(0deg); }
+    90% { transform: translateY(0) rotate(0deg); }
+    /* Tiny Hop */
+    93% { transform: translateY(-2px) rotate(0deg); }
+    95% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes kittySpinClick {
+    0% { transform: scale(1) rotate(0deg) translateY(0); }
+    30% { transform: scale(1.3) rotate(-180deg) translateY(-8px); }
+    70% { transform: scale(1.15) rotate(-360deg) translateY(-3px); }
+    100% { transform: scale(1) rotate(-360deg) translateY(0); }
+}
+
+/* Floating heart style */
+.island-floating-heart {
+    position: absolute;
+    bottom: 100%;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0;
+    animation: floatUpAndFade 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes floatUpAndFade {
+    0% {
+        transform: translateY(10px) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-25px) translateX(-8px) rotate(-15deg);
+    }
+    100% {
+        transform: translateY(-60px) translateX(8px) rotate(15deg);
+        opacity: 0;
+    }
+}
+
+/* Phone Status Bar */
+.phone-status-bar {
+    height: 48px;
+    background: #ffe5ec;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 25px 6px 25px;
+    color: #ff4d6d;
+    font-size: 0.85rem;
+    font-weight: bold;
+    z-index: 40;
+    box-sizing: border-box;
+    border-bottom: 2px solid #ffc2cd;
+}
+
+.phone-status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-kitty-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    animation: idleBob 1.5s ease-in-out infinite;
+}
+
+/* Phone Screen Content */
+.phone-screen-content {
+    flex: 1;
+    background: #fff0f3;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 16px;
+    box-sizing: border-box;
+}
+
+/* Header greeting */
+.tms-header {
+    text-align: left;
+    margin-bottom: 20px;
+    padding-top: 8px;
+}
+
+.tms-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tms-greet {
+    font-size: 1.15rem;
+    color: #ff4d6d;
+    margin: 0;
+    font-weight: bold;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.peeking-kitty-img {
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    margin-top: -10px;
+    animation: idleBob 2s ease-in-out infinite alternate;
+}
+
+.tms-datetime {
+    font-size: 0.85rem;
+    color: #ff758f;
+    font-weight: bold;
+    margin-top: 6px;
+}
+
+/* Form Styles */
+.tms-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Inputs - Standard Padding (No Left Icons) */
+.tms-input-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.tms-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 3px solid #ffb3c1;
+    border-radius: 18px;
+    font-size: 1.05rem;
+    background-color: #ffffff;
+    color: #ff4d6d;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease-in-out;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+.tms-input::placeholder {
+    color: #ffb3c1;
+}
+
+.tms-input:focus {
+    border-color: #ff4d6d;
+    box-shadow: 0 0 15px rgba(255, 77, 109, 0.25);
+    background-color: #fffafb;
+}
+
+.tms-input:disabled {
+    background-color: #ffe5ec;
+    color: #ff758f;
+    border-color: #ffccd5;
+    cursor: not-allowed;
+}
+
+/* Password eye toggle */
+.password-toggle-btn {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #ff758f;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+/* Custom Checkbox */
+.tms-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    color: #ff4d6d;
+    cursor: pointer;
+    user-select: none;
+    margin-top: -5px;
+    font-weight: bold;
+}
+
+.tms-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.custom-checkbox {
+    position: relative;
+    height: 22px;
+    width: 22px;
+    background-color: #ffffff;
+    border: 3px solid #ffb3c1;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.tms-checkbox:checked ~ .custom-checkbox {
+    background-color: #ff4d6d;
+    border-color: #ff4d6d;
+}
+
+.custom-checkbox:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.tms-checkbox:checked ~ .custom-checkbox:after {
+    display: block;
+}
+
+.custom-checkbox:after {
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+}
+
+/* Note description */
+.tms-note {
+    font-size: 0.95rem;
+    color: #ff4d6d;
+    margin: 5px 0;
+    font-weight: bold;
+    line-height: 1.4;
+    text-shadow: 0 1px 0px white;
+}
+
+/* Buttons */
+.tms-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 18px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+    box-sizing: border-box;
+    font-family: 'Comic Sans MS', cursive;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Login Button */
+.btn-login {
+    background: linear-gradient(135deg, #ff758f, #ff4d6d);
+    color: white;
+    box-shadow: 0 6px 15px rgba(255, 77, 109, 0.3);
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, #ff6380, #ff3b5c);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4);
+}
+
+.btn-login.logged-in {
+    background: linear-gradient(135deg, #ff6b6b, #b91c1c);
+}
+
+/* Standard Action Buttons */
+.btn-action.active {
+    background: linear-gradient(135deg, #ff758f, #ff4d6d);
+    color: white;
+    box-shadow: 0 6px 15px rgba(255, 77, 109, 0.3);
+}
+
+.btn-action.active:hover {
+    background: linear-gradient(135deg, #ff6380, #ff3b5c);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4);
+}
+
+.btn-action.disabled {
+    background: #ffe5ec;
+    color: #ffb3c1;
+    cursor: not-allowed;
+    box-shadow: none;
+    border: 2px dashed #ffc2cd;
+}
+
+/* Beautiful Date Picker Card */
+.tms-date-picker-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 16px;
+    border-radius: 18px;
+    border: 3px solid #ffccd5;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    user-select: none;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.tms-date-picker-card.active {
+    border-color: #ff85a2;
+    background: linear-gradient(135deg, #ffffff 0%, #fff0f3 100%);
+    box-shadow: 0 6px 16px rgba(255, 117, 143, 0.12);
+}
+
+.tms-date-picker-card.active:hover {
+    border-color: #ff4d6d;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 22px rgba(255, 77, 109, 0.22);
+}
+
+.tms-date-picker-card.disabled {
+    border-color: #ffccd5;
+    border-style: dashed;
+    background: #ffe5ec;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.date-card-icon {
+    font-size: 1.6rem;
+    animation: bounceSlow 3s ease-in-out infinite;
+}
+
+.date-card-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+    gap: 2px;
+}
+
+.date-card-title {
+    font-size: 0.75rem;
+    color: #ff758f;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+}
+
+.tms-date-picker-card.disabled .date-card-title {
+    color: #ffb3c1;
+}
+
+.date-card-value {
+    font-size: 1.05rem;
+    color: #ff4d6d;
+    font-weight: 800;
+}
+
+.tms-date-picker-card.disabled .date-card-value {
+    color: #ffb3c1;
+}
+
+.date-card-arrow {
+    font-size: 1.05rem;
+    color: #ff85a2;
+    transition: transform 0.25s ease;
+}
+
+.tms-date-picker-card.active:hover .date-card-arrow {
+    transform: rotate(20deg) scale(1.2);
+}
+
+@keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.tms-divider {
+    height: 4px;
+    background-color: #ffccd5;
+    margin: 12px 0;
+    border-radius: 4px;
+}
+
+/* Bottom home indicator */
+.phone-home-indicator {
+    height: 25px;
+    background: #fff0f3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+    border-top: 2px solid #ffc2cd;
+}
+
+.phone-home-indicator::after {
+    content: "";
+    width: 120px;
+    height: 6px;
+    background: #ffb3c1;
+    border-radius: 10px;
+}
+
+/* Idle Bobbing Animation */
+@keyframes idleBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@media (max-width: 480px) {
+    .tms-screen-wrapper {
+        padding: 15px 5px; /* Minimal padding so it fills almost the entire screen */
+        background: linear-gradient(135deg, #ffe5ec 0%, #ffc2cd 100%);
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        height: auto;
+    }
+
+    /* Keep phone-container wrapping the simulator */
+    .phone-container {
+        padding-top: 14px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    .kitty-ear {
+        display: block; /* Keep ears visible */
+        top: 0px;
+        width: 44px;
+        height: 34px;
+    }
+
+    .kitty-ear::after {
+        width: 30px;
+        height: 22px;
+    }
+
+    /* Anchor to left/right boundaries of the container (which equals the simulator width) */
+    .kitty-ear.left {
+        left: 35px;
+    }
+
+    .kitty-ear.right {
+        right: 35px;
+    }
+
+    .phone-simulator {
+        width: 94vw;
+        max-width: 400px; /* Limit maximum size on tablets */
+        height: 88vh; /* Reduced from 92vh to avoid being covered by header or navigation bars */
+        max-height: 800px;
+        background: #121212;
+        border-radius: 38px;
+        border: 8px solid #ff9ebb; /* Pink phone case on mobile */
+        padding: 6px; /* Forms the black phone bezel on mobile */
+        box-shadow: 0 15px 40px rgba(255, 77, 109, 0.25);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kitty-bow {
+        top: 0px; /* Rests beautifully on top of mobile pink case */
+        transform: translateX(-50%) scale(0.95);
+    }
+
+    .phone-container:hover .kitty-bow {
+        transform: translateX(-50%) scale(1.05) translateY(-1px);
+    }
+
+    /* Keep Dynamic Island visible and center appropriately */
+    .dynamic-island {
+        display: flex;
+        width: 105px;
+        height: 26px;
+        top: 8px;
+    }
+
+    .dynamic-island:hover {
+        width: 190px;
+        height: 36px;
+        top: 6px;
+    }
+
+    .phone-status-bar {
+        display: flex;
+        height: 42px;
+        padding: 0 20px 4px 20px;
+        font-size: 0.8rem;
+    }
+
+    .phone-home-indicator {
+        display: flex;
+        height: 22px;
+    }
+
+    .phone-home-indicator::after {
+        width: 110px;
+        height: 4px;
+    }
+
+    .phone-screen-content {
+        padding: 20px 14px;
+        background: #fff0f3;
+    }
+
+    .tms-header {
+        margin-top: 0;
+    }
+
+
+    .tms-greet {
+        font-size: 1.1rem;
+    }
+
+    .tms-input {
+        padding: 13px 15px;
+        font-size: 1rem;
+        border-radius: 16px;
+    }
+
+    .tms-btn {
+        padding: 13px;
+        font-size: 1rem;
+        border-radius: 16px;
+    }
+
+    .tms-divider {
+        margin: 10px 0;
+    }
+
+    /* Outer back button centered on mobile, pushing the phone simulator down */
+    .tms-back-btn {
+        position: relative;
+        top: auto;
+        left: auto;
+        margin-bottom: 15px; /* Prevent overlap with the phone */
+        box-shadow: 0 4px 12px rgba(255, 77, 109, 0.15);
+    }
+
+    /* Mobile Dynamic Island Kitty Animations */
+    .island-kitty-wrapper {
+        animation: kittyRunShortMobile 4s linear infinite;
+    }
+
+    .dynamic-island:hover .island-kitty-wrapper {
+        animation: kittyRunLongMobile 5s linear infinite;
+    }
+}
+
+/* Custom Calendar Modal */
+.tms-calendar-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeInModal 0.2s ease-out;
+}
+
+.tms-calendar-modal {
+    width: 90%;
+    max-width: 300px;
+    background: #ffffff;
+    border-radius: 24px;
+    border: 3px solid #ffccd5;
+    padding: 14px;
+    box-sizing: border-box;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: scaleInModal 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: inherit;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleInModal {
+    from { transform: scale(0.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.calendar-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #fff0f3;
+    padding-bottom: 8px;
+}
+
+.calendar-nav-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: #ff4d6d;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.calendar-nav-btn:hover {
+    background: #fff0f3;
+    transform: scale(1.2);
+}
+
+.calendar-month-year {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #ff4d6d;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: bold;
+    color: #ff758f;
+}
+
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 6px;
+    column-gap: 4px;
+}
+
+.calendar-day-btn {
+    position: relative;
+    aspect-ratio: 1;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #ff4d6d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+    padding: 0;
+}
+
+.calendar-day-btn.current-month {
+    color: #ff4d6d;
+}
+
+.calendar-day-btn.other-month {
+    color: #ffccd5;
+}
+
+.calendar-day-btn:hover:not(.selected) {
+    background: #fff0f3;
+    transform: scale(1.1);
+}
+
+.calendar-day-btn.selected {
+    background: linear-gradient(135deg, #ff758f, #ff4d6d);
+    color: white !important;
+    box-shadow: 0 4px 10px rgba(255, 77, 109, 0.3);
+}
+
+.day-selected-heart {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 0.65rem;
+}
+
+.calendar-close-modal-btn {
+    width: 100%;
+    padding: 10px;
+    background: #fff0f3;
+    border: 2px solid #ffccd5;
+    border-radius: 14px;
+    color: #ff4d6d;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    margin-top: 4px;
+    font-family: inherit;
+}
+
+.calendar-close-modal-btn:hover {
+    background: #ff4d6d;
+    color: white;
+    border-color: #ff4d6d;
+}
+
+/* User details badge inside tms-note */
+.logged-in-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-details-badge {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 77, 109, 0.1);
+    border: 1.5px solid #ffccd5;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: #ff4d6d;
+    font-weight: bold;
+    justify-content: center;
+    width: max-content;
+    box-sizing: border-box;
+    margin: 4px auto 0 auto;
+}
+
+.user-details-badge span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}

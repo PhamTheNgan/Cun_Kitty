@@ -6,6 +6,18 @@ export default defineConfig({
     plugins: [react()],
     base: "/Cun_Kitty/",
     server: {
-        allowedHosts: true
+        allowedHosts: true,
+        proxy: {
+            '/fis0': {
+                target: 'https://ddc.fis.vn',
+                changeOrigin: true,
+                secure: false
+            },
+            '/apietms': {
+                target: 'https://ddc.fis.vn',
+                changeOrigin: true,
+                secure: false
+            }
+        }
     }
 })
