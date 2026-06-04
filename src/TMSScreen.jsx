@@ -207,6 +207,13 @@ const decodeJwt = (token) => {
     }
 };
 
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const getLoginUrl = () => isLocal ? '/fis0/api/login' : 'https://ddc.fis.vn/fis0/api/login';
+const getCheckInUrl = (userId, typeCode, dateTimeStr) => {
+    const base = isLocal ? '/apietms' : 'https://ddc.fis.vn/apietms';
+    return `${base}/api/ChechInData/MobileAddCheckInOut?userId=${encodeURIComponent(userId)}&typeCheckInOut=${typeCode}&dateCheckInOut=${encodeURIComponent(dateTimeStr)}`;
+};
+
 export default function TMSScreen({ onBack }) {
     const baseUrl = import.meta.env.BASE_URL || '/';
     const kittyImg = `${baseUrl}kitty.png`;
@@ -370,7 +377,7 @@ export default function TMSScreen({ onBack }) {
         } else {
             setIsLoading(true);
             try {
-                const response = await fetch('/fis0/api/login', {
+                const response = await fetch(getLoginUrl(), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -489,7 +496,7 @@ export default function TMSScreen({ onBack }) {
 
         setIsLoading(true);
         try {
-            const url = `/apietms/api/ChechInData/MobileAddCheckInOut?userId=${encodeURIComponent(etmsID)}&typeCheckInOut=${typeCode}&dateCheckInOut=${encodeURIComponent(dateTimeStr)}`;
+            const url = getCheckInUrl(etmsID, typeCode, dateTimeStr);
             
             const activeUser = activeUsername || username.trim().split('@')[0];
 
@@ -550,7 +557,7 @@ export default function TMSScreen({ onBack }) {
 
         setIsLoading(true);
         try {
-            const url = `/apietms/api/ChechInData/MobileAddCheckInOut?userId=${encodeURIComponent(etmsID)}&typeCheckInOut=${typeCode}&dateCheckInOut=${encodeURIComponent(dateTimeStr)}`;
+            const url = getCheckInUrl(etmsID, typeCode, dateTimeStr);
             
             const activeUser = activeUsername || username.trim().split('@')[0];
 
