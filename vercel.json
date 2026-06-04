@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/fis0/:path*",
+      "destination": "https://ddc.fis.vn/fis0/:path*"
+    },
+    {
+      "source": "/apietms/:path*",
+      "destination": "https://ddc.fis.vn/apietms/:path*"
+    }
+  ]
+}
