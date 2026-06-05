@@ -17,16 +17,15 @@
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
     "@react-three/rapier": "^2.2.0",
-    "ecctrl": "^1.0.97",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "three": "^0.183.2"
-  },
-  "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "ecctrl": "^1.0.97",
     "gh-pages": "^6.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.183.2",
     "vite": "^6.0.0"
-  }
+  },
+  "devDependencies": {}
 }
