@@ -350,11 +350,6 @@ export default function TMSScreen({ onBack }) {
     };
 
     const handleLogin = async () => {
-        if (!username.trim() || !password.trim()) {
-            triggerToast('⚠️ Nhập tài khoản và mật khẩu nhen Cún! 🥺💕');
-            return;
-        }
-
         if (isLoggedIn) {
             setIsLoggedIn(false);
             setToken('');
@@ -368,8 +363,15 @@ export default function TMSScreen({ onBack }) {
                 setUsername('');
                 setPassword('');
             }
-        } else {
-            setIsLoading(true);
+            return;
+        }
+
+        if (!username.trim() || !password.trim()) {
+            triggerToast('⚠️ Nhập tài khoản và mật khẩu nhen Cún! 🥺💕');
+            return;
+        }
+
+        setIsLoading(true);
             try {
                 const response = await fetch('/fis0/api/login', {
                     method: 'POST',
@@ -430,7 +432,6 @@ export default function TMSScreen({ onBack }) {
             } finally {
                 setIsLoading(false);
             }
-        }
     };
 
     const handleCheckboxChange = (e) => {
@@ -729,6 +730,52 @@ export default function TMSScreen({ onBack }) {
 
                         {/* Form Fields */}
                         <div className="tms-form">
+                            {/* Super Cute Quick Account Switcher Cards */}
+                            <div className="tms-quick-acc-wrapper">
+                                <div className="quick-acc-header">
+                                    <span className="quick-acc-title">🎀 Tài khoản của Cún:</span>
+                                </div>
+                                <div className="quick-acc-cards">
+                                    <button 
+                                        type="button" 
+                                        className={`quick-acc-card ${username === 'phuongdk10' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setUsername('phuongdk10');
+                                            if (saveInfo) localStorage.setItem('tms_username', 'phuongdk10');
+                                        }}
+                                        disabled={isLoggedIn || isLoading}
+                                    >
+                                        <div className="acc-avatar-circle">
+                                            <img src={kitty1Img} alt="kitty-avatar-1" className="acc-avatar-img" />
+                                        </div>
+                                        <div className="acc-info">
+                                            <span className="acc-name">phuongdk10</span>
+                                            <span className="acc-subtext">{username === 'phuongdk10' ? 'Đang chọn 💖' : 'Chọn ngay ✨'}</span>
+                                        </div>
+                                        {username === 'phuongdk10' && <div className="acc-active-badge">🎀</div>}
+                                    </button>
+
+                                    <button 
+                                        type="button" 
+                                        className={`quick-acc-card ${username === 'nganpt10' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setUsername('nganpt10');
+                                            if (saveInfo) localStorage.setItem('tms_username', 'nganpt10');
+                                        }}
+                                        disabled={isLoggedIn || isLoading}
+                                    >
+                                        <div className="acc-avatar-circle">
+                                            <img src={kitty2Img} alt="kitty-avatar-2" className="acc-avatar-img" />
+                                        </div>
+                                        <div className="acc-info">
+                                            <span className="acc-name">nganpt10</span>
+                                            <span className="acc-subtext">{username === 'nganpt10' ? 'Đang chọn 💖' : 'Chọn ngay ✨'}</span>
+                                        </div>
+                                        {username === 'nganpt10' && <div className="acc-active-badge">🎀</div>}
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Account Field */}
                             <div className="tms-input-container">
                                 <input
